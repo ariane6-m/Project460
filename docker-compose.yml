@@ -1,0 +1,33 @@
+version: '3.8'
+
+services:
+  api:
+    build: ./api
+    container_name: monitoring-api
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./api:/usr/src/app
+      - /usr/src/app/node_modules
+
+  prometheus:
+    image: prom/prometheus:v2.39.1
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus:/etc/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+
+  dashboard:
+    build: ./dashboard
+    container_name: monitoring-dashboard
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./dashboard:/usr/src/app
+      - /usr/src/app/node_modules
+    depends_on:
+      - api
+      - prometheus
