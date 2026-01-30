@@ -1,7 +1,7 @@
 {
-  "name": "monitoring-api",
+  "name": "Moto-Moto",
   "version": "1.0.0",
-  "description": "A simple API that exposes Prometheus metrics.",
+  "description": "Network Monitoring System .",
   "main": "index.js",
   "scripts": {
     "start": "node index.js"
