@@ -1,8 +1,27 @@
 const express = require('express');
 const client = require('prom-client');
+const rbac = require('./src/middleware/rbac');
+const auditLogger = require('./src/services/auditLogger');
+
 
 const app = express();
 const port = 8080;
+
+// Middleware to parse JSON bodies
+app.use(express.json());
+
+// This is a placeholder for your actual authentication middleware
+// It should populate req.user with the user's data, including their role
+app.use((req, res, next) => {
+  // For demonstration purposes, we'll add a mock user.
+  // In a real application, you would implement proper authentication (e.g., JWT, OAuth).
+  // You can change 'Viewer' to 'Admin' to test different roles.
+  req.user = { id: 'mockuser', role: 'Viewer' };
+  next();
+});
+
+// Audit logger middleware
+app.use(auditLogger);
 
 // Create a Registry to register the metrics
 const register = new client.Registry();
@@ -45,8 +64,8 @@ app.get('/hello', (req, res) => {
     res.send('Hello again!');
 });
 
-// Expose the metrics endpoint
-app.get('/metrics', async (req, res) => {
+// Expose the metrics endpoint, now with RBAC
+app.get('/metrics/:namespace?', rbac, async (req, res) => {
   try {
     res.set('Content-Type', register.contentType);
     res.end(await register.metrics());
