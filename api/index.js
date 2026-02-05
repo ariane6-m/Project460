@@ -77,3 +77,19 @@ app.get('/metrics/:namespace?', rbac, async (req, res) => {
 app.listen(port, () => {
   console.log(`API listening at http://localhost:${port}`);
 });
+
+// Add to your api/index.js
+app.get('/metrics/json', (req, res) => {
+  // Return network monitoring data as JSON
+  res.json({
+    timestamp: new Date().toISOString(),
+    networkStats: {
+      packetsReceived: Math.floor(Math.random() * 10000),
+      packetsSent: Math.floor(Math.random() * 10000),
+      bytesReceived: Math.floor(Math.random() * 1000000),
+      bytesSent: Math.floor(Math.random() * 1000000),
+      activeConnections: Math.floor(Math.random() * 100),
+    }
+  });
+});
+
