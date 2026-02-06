@@ -1,37 +1,38 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import Chart from './components/Chart';
+import Navbar from './components/Navbar';
+import Scanning from './components/Scanning';
+import IDS from './components/IDS';
+import './App.css';
+
+const Dashboard = () => {
+  return (
+    <div>
+      <h2>Dashboard Content</h2>
+      <p>This is a placeholder for your dashboard content.</p>
+    </div>
+  );
+}
 
 function App() {
-  const [metrics, setMetrics] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-
-  useEffect(() => {
-    // Fetch metrics every 5 seconds for real-time updates
-    const fetchMetrics = async () => {
-      try {
-        const response = await axios.get(`${process.env.REACT_APP_API_URL || 'http://localhost:8080'}/metrics`);
-        setMetrics(response.data);
-        setError(null);
-      } catch (err) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchMetrics();
-    const interval = setInterval(fetchMetrics, 8080); // Update every 5 seconds
-
-    return () => clearInterval(interval);
-  }, []);
-
   return (
-    <div className="App">
-      {loading && <p>Loading metrics...</p>}
-      {error && <p style={{color: 'red'}}>Error: {error}</p>}
-      <pre>{JSON.stringify(metrics, null, 2)}</pre>
-    </div>
+    <Router>
+      <div className="App">
+        <header className="App-header">
+          <h1>Moto-Moto</h1>
+          <Navbar />
+        </header>
+        <main>
+          <Routes>
+            <Route path="/" element={<Dashboard />} />
+            <Route path="/scanning" element={<Scanning />} />
+            <Route path="/ids" element={<IDS />} />
+          </Routes>
+        </main>
+      </div>
+    </Router>
   );
 }
 
