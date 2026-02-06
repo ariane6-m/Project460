@@ -3,31 +3,42 @@ version: '3.8'
 services:
   api:
     build: ./api
-    container_name: monitoring-api
     ports:
       - "8080:8080"
+    environment:
+      NODE_ENV: development
     volumes:
       - ./api:/usr/src/app
       - /usr/src/app/node_modules
+    networks:
+      - monitoring
+
+  dashboard:
+    build:
+      context: ./dashboard
+      dockerfile: Dockerfile.dev
+    ports:
+      - "3000:3000"
+    environment:
+      REACT_APP_API_URL: http://api:8080
+      WATCHPACK_POLLING: 1  # Enable file watching in containers
+    volumes:
+      - ./dashboard:/app
+      - /app/node_modules
+    depends_on:
+      - api
+    networks:
+      - monitoring
 
   prometheus:
-    image: prom/prometheus:v2.39.1
-    container_name: prometheus
+    image: prom/prometheus:latest
     ports:
       - "9090:9090"
     volumes:
-      - ./prometheus:/etc/prometheus
-    command:
-      - '--config.file=/etc/prometheus/prometheus.yml'
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+    networks:
+      - monitoring
 
-  dashboard:
-    build: ./dashboard
-    container_name: monitoring-dashboard
-    ports:
-      - "3000:3000"
-    volumes:
-      - ./dashboard:/usr/src/app
-      - /usr/src/app/node_modules
-    depends_on:
-      - api
-      - prometheus
+networks:
+  monitoring:
+    driver: bridge
