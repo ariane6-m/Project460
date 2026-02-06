@@ -21,7 +21,7 @@ function App() {
     };
 
     fetchMetrics();
-    const interval = setInterval(fetchMetrics, 5000); // Update every 5 seconds
+    const interval = setInterval(fetchMetrics, 8080); // Update every 5 seconds
 
     return () => clearInterval(interval);
   }, []);
