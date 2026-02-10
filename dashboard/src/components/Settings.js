@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 
-const Settings = () => {
+const Settings = ({ darkMode = false, onDarkModeChange = () => {} }) => {
   const [settings, setSettings] = useState({
     scanInterval: 60,
     scanTypes: ['network'],
@@ -153,6 +153,23 @@ const Settings = () => {
             />
           </div>
         </div>
+
+          <div className="settings-section">
+            <h2>Display Preferences</h2>
+
+            <div className="settings-group">
+              <label className="checkbox-label dark-mode-toggle">
+                <input
+                  type="checkbox"
+                  name="darkMode"
+                  checked={darkMode}
+                  onChange={onDarkModeChange}
+                />
+                <span className="toggle-label">Dark Mode</span>
+              </label>
+              <p className="setting-description">Toggle dark theme for reduced eye strain in low-light environments</p>
+            </div>
+          </div>
 
         <div className="settings-actions">
           <button

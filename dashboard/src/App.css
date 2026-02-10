@@ -1,3 +1,27 @@
+.dark-mode-toggle {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 0;
+}
+
+.dark-mode-toggle input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+  accent-color: #4a9eff;
+}
+
+.toggle-label {
+  font-weight: 500;
+}
+
+.setting-description {
+  font-size: 13px;
+  color: #666;
+  margin: 0;
+  padding: 0;
+}
 .App {
   text-align: center;
   display: flex;
@@ -583,4 +607,202 @@ nav a:hover {
   padding: 40px 20px;
   color: #999;
   font-size: 16px;
+}
+
+/* Dark Mode Styles */
+body.dark-mode {
+  background-color: #1a1a1a;
+  color: #e0e0e0;
+}
+
+body.dark-mode .App {
+  background-color: #1a1a1a;
+  color: #e0e0e0;
+}
+
+body.dark-mode .App-header {
+  background-color: #121212;
+  border-bottom: 1px solid #333;
+}
+
+body.dark-mode main {
+  background-color: #1a1a1a;
+}
+
+body.dark-mode .dashboard-intro {
+  background-color: #1e3a5f;
+  border-left-color: #4a9eff;
+  color: #a0c4ff;
+}
+
+body.dark-mode .dashboard-card {
+  background-color: #2d2d2d;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+body.dark-mode .dashboard-card h3,
+body.dark-mode .dashboard-card p,
+body.dark-mode .dashboard-stats h2,
+body.dark-mode .dashboard-stats p {
+  color: #e0e0e0;
+}
+
+body.dark-mode .dashboard-card p {
+  color: #b0b0b0;
+}
+
+body.dark-mode .dashboard-link {
+  color: #4a9eff;
+}
+
+body.dark-mode .dashboard-link:hover {
+  color: #6bb3ff;
+}
+
+body.dark-mode .dashboard-stats {
+  background-color: #2d2d2d;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+body.dark-mode .stat-placeholder {
+  color: #888;
+}
+
+body.dark-mode .settings-container,
+body.dark-mode .scanning-container {
+  background-color: #1a1a1a;
+  color: #e0e0e0;
+}
+
+body.dark-mode .settings-section,
+body.dark-mode .device-filter,
+body.dark-mode .device-list {
+  background-color: #2d2d2d;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+body.dark-mode .settings-section h2,
+body.dark-mode .device-filter h3,
+body.dark-mode .scanning-container h1 {
+  color: #e0e0e0;
+  border-bottom-color: #444;
+}
+
+body.dark-mode .settings-group label,
+body.dark-mode .filter-group label,
+body.dark-mode .scan-input-group label {
+  color: #b0b0b0;
+}
+
+body.dark-mode .settings-group input,
+body.dark-mode .filter-group input,
+body.dark-mode .filter-group select,
+body.dark-mode .scan-input-group input,
+body.dark-mode .scan-input-group select {
+  background-color: #1a1a1a;
+  color: #e0e0e0;
+  border-color: #444;
+}
+
+body.dark-mode .settings-group input:focus,
+body.dark-mode .filter-group input:focus,
+body.dark-mode .filter-group select:focus,
+body.dark-mode .scan-input-group input:focus,
+body.dark-mode .scan-input-group select:focus {
+  border-color: #4a9eff;
+  background-color: #1a1a1a;
+}
+
+body.dark-mode .reset-button {
+  background-color: #444;
+  color: #e0e0e0;
+}
+
+body.dark-mode .reset-button:hover {
+  background-color: #555;
+}
+
+body.dark-mode .save-button {
+  background-color: #4a9eff;
+  color: #000;
+}
+
+body.dark-mode .save-button:hover:not(:disabled) {
+  background-color: #6bb3ff;
+}
+
+body.dark-mode .scan-button {
+  background-color: #4a9eff;
+  color: #000;
+}
+
+body.dark-mode .scan-button:hover:not(:disabled) {
+  background-color: #6bb3ff;
+}
+
+body.dark-mode .error-message {
+  background-color: #5f2020;
+  color: #ff9999;
+  border-left-color: #ff6666;
+}
+
+body.dark-mode .device-list-header {
+  background-color: #1a1a1a;
+  border-bottom-color: #444;
+}
+
+body.dark-mode .list-count {
+  color: #b0b0b0;
+}
+
+body.dark-mode .device-item {
+  border-bottom-color: #444;
+}
+
+body.dark-mode .device-item:hover {
+  background-color: #333;
+}
+
+body.dark-mode .device-ip {
+  color: #4a9eff;
+}
+
+body.dark-mode .device-type-badge {
+  background-color: #1e3a5f;
+  color: #a0c4ff;
+}
+
+body.dark-mode .detail-label {
+  color: #888;
+}
+
+body.dark-mode .detail-value {
+  color: #e0e0e0;
+}
+
+body.dark-mode .ports-list {
+  background-color: #1a1a1a;
+  color: #e0e0e0;
+  border-color: #444;
+}
+
+body.dark-mode .scan-placeholder {
+  color: #666;
+}
+
+body.dark-mode .scan-input-section {
+  background-color: #2d2d2d;
+  border-color: #444;
+}
+
+body.dark-mode .setting-description {
+  color: #888;
+}
+
+body.dark-mode .toggle-label {
+  color: #e0e0e0;
+}
+
+body.dark-mode .dark-mode-toggle {
+  color: #e0e0e0;
 }

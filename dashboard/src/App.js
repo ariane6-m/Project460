@@ -45,6 +45,27 @@ const Dashboard = () => {
 }
 
 function App() {
+  const [darkMode, setDarkMode] = useState(() => {
+    // Check localStorage for saved dark mode preference
+    const saved = localStorage.getItem('darkMode');
+    return saved ? JSON.parse(saved) : false;
+  });
+
+  useEffect(() => {
+    // Save dark mode preference to localStorage
+    localStorage.setItem('darkMode', JSON.stringify(darkMode));
+    // Apply dark mode class to body
+    if (darkMode) {
+      document.body.classList.add('dark-mode');
+    } else {
+      document.body.classList.remove('dark-mode');
+    }
+  }, [darkMode]);
+
+  const toggleDarkMode = () => {
+    setDarkMode(!darkMode);
+  };
+
   return (
     <Router>
       <div className="App">
@@ -57,7 +78,7 @@ function App() {
             <Route path="/" element={<Dashboard />} />
             <Route path="/scanning" element={<Scanning />} />
             <Route path="/ids" element={<IDS />} />
-            <Route path="/settings" element={<Settings />} />
+           <Route path="/settings" element={<Settings darkMode={darkMode} onDarkModeChange={toggleDarkMode} />} />
           </Routes>
         </main>
       </div>
