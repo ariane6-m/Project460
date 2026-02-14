@@ -6,11 +6,11 @@ WORKDIR /usr/src/app
 
 # Copy package files
 COPY package*.json ./
+COPY package-lock.json ./
 
 # Install production dependencies only with clean cache
 RUN --mount=type=cache,target=/root/.npm \
-    npm install --only=production && \
-    npm cache clean --force
+    npm ci --only=production
 
 # Copy application source
 COPY . .

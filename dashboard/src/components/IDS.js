@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import apiClient from '../api';
 
 const IDS = () => {
   const [running, setRunning] = useState(false);
@@ -7,7 +7,7 @@ const IDS = () => {
 
   const startIDS = async () => {
     try {
-      await axios.get('http://localhost:8080/ids/start');
+      await apiClient.get('/ids/start');
       setRunning(true);
     } catch (error) {
       console.error(error);
@@ -16,7 +16,7 @@ const IDS = () => {
 
   const stopIDS = async () => {
     try {
-      await axios.get('http://localhost:8080/ids/stop');
+      await apiClient.get('/ids/stop');
       setRunning(false);
     } catch (error) {
       console.error(error);
@@ -28,7 +28,7 @@ const IDS = () => {
     if (running) {
       interval = setInterval(async () => {
         try {
-          const response = await axios.get('http://localhost:8080/ids/alerts');
+          const response = await apiClient.get('/ids/alerts');
           setAlerts(response.data);
         } catch (error) {
           console.error(error);

@@ -1,7 +1,5 @@
-const fs = require('fs');
-const path = require('path');
-
-const logFilePath = path.join(__dirname, '../../audit.log');
+const auditLogs = []; // In-memory storage for audit logs
+const MAX_LOGS = 100; // Keep the last 100 logs
 
 function auditLogger(req, res, next) {
   const oldWrite = res.write;
@@ -24,18 +22,18 @@ function auditLogger(req, res, next) {
       timestamp: new Date().toISOString(),
       user: req.user ? req.user.id : 'anonymous',
       action: `${req.method} ${req.originalUrl}`,
+      method: req.method, // Add method for easy filtering
+      url: req.originalUrl, // Add url for easy display
       query: req.query,
       body: req.body,
       responseStatus: res.statusCode,
+      // responseBody: body, // Optionally log response body if needed for debugging
     };
 
-    const logLine = JSON.stringify(log) + '\n';
-
-    fs.appendFile(logFilePath, logLine, (err) => {
-      if (err) {
-        console.error('Failed to write to audit log:', err);
-      }
-    });
+    auditLogs.push(log);
+    if (auditLogs.length > MAX_LOGS) {
+      auditLogs.shift(); // Remove the oldest log
+    }
 
     oldEnd.apply(res, restArgs);
   };
@@ -43,5 +41,4 @@ function auditLogger(req, res, next) {
   next();
 }
 
-
-module.exports = auditLogger;
+module.exports = { auditLogger, auditLogs };

@@ -1,16 +1,22 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import Chart from './components/Chart';
 import Navbar from './components/Navbar';
+import Sidebar from './components/Sidebar'; // Import Sidebar
 import Scanning from './components/Scanning';
 import IDS from './components/IDS';
 import Settings from './components/Settings';
 import './App.css';
 
+// Placeholder Components for new sections
+const Metrics = () => <h2>System Metrics Placeholder</h2>;
+const Graphs = () => <h2>Live Activity Graphs Placeholder</h2>;
+const Devices = () => <h2>Device List Placeholder</h2>;
+const Alerts = () => <h2>Alerts Panel Placeholder</h2>;
+const Timeline = () => <h2>Event Timeline Placeholder</h2>;
+
 const Dashboard = () => {
   return (
-    <div className="dashboard">
+    <div className="dashboard-content">
       <h1>Dashboard</h1>
       <div className="dashboard-intro">
         <p>Welcome to <strong>Moto-Moto</strong>, your network security monitoring system.</p>
@@ -46,15 +52,12 @@ const Dashboard = () => {
 
 function App() {
   const [darkMode, setDarkMode] = useState(() => {
-    // Check localStorage for saved dark mode preference
     const saved = localStorage.getItem('darkMode');
     return saved ? JSON.parse(saved) : false;
   });
 
   useEffect(() => {
-    // Save dark mode preference to localStorage
     localStorage.setItem('darkMode', JSON.stringify(darkMode));
-    // Apply dark mode class to body
     if (darkMode) {
       document.body.classList.add('dark-mode');
     } else {
@@ -66,21 +69,41 @@ function App() {
     setDarkMode(!darkMode);
   };
 
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true); // State to manage sidebar visibility
+
+  const toggleSidebar = () => {
+    setIsSidebarOpen(!isSidebarOpen);
+  };
+
   return (
     <Router>
-      <div className="App">
-        <header className="App-header">
-          <h1>Moto-Moto</h1>
-          <Navbar />
-        </header>
-        <main>
-          <Routes>
-            <Route path="/" element={<Dashboard />} />
-            <Route path="/scanning" element={<Scanning />} />
-            <Route path="/ids" element={<IDS />} />
-           <Route path="/settings" element={<Settings darkMode={darkMode} onDarkModeChange={toggleDarkMode} />} />
-          </Routes>
-        </main>
+      <div className="App-container">
+        <Sidebar isOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />
+        <div className={`main-content-wrapper ${isSidebarOpen ? 'sidebar-open' : 'sidebar-closed'}`}>
+          <header className="App-header">
+            <button className="hamburger-btn" onClick={toggleSidebar}>
+              &#9776; {/* Hamburger Icon */}
+            </button>
+            <div className="header-content"> {/* Wrap h1 and Navbar for better alignment */}
+              <h1>Moto-Moto</h1>
+              <Navbar />
+            </div>
+          </header>
+          <main className="main-content">
+            <Routes>
+              <Route path="/" element={<Dashboard />} />
+              <Route path="/scanning" element={<Scanning />} />
+              <Route path="/ids" element={<IDS />} />
+              <Route path="/settings" element={<Settings darkMode={darkMode} onDarkModeChange={toggleDarkMode} />} />
+              {/* New Routes */}
+              <Route path="/metrics" element={<Metrics />} />
+              <Route path="/graphs" element={<Graphs />} /> {/* Corrected typo here */}
+              <Route path="/devices" element={<Devices />} />
+              <Route path="/alerts" element={<Alerts />} />
+              <Route path="/timeline" element={<Timeline />} />
+            </Routes>
+          </main>
+        </div>
       </div>
     </Router>
   );

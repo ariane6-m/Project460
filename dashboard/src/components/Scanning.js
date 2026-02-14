@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import axios from 'axios';
+import apiClient from '../api';
 import DeviceFilter from './DeviceFilter';
 import DeviceList from './DeviceList';
 
@@ -74,7 +74,7 @@ const Scanning = () => {
     setLoading(true);
     setError('');
     try {
-      const response = await axios.get('http://localhost:8080/scan', {
+      const response = await apiClient.get('/scan', {
         params: {
           target,
           scan_type: scanType,

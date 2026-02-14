@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import apiClient from '../api';
 
 const Settings = ({ darkMode = false, onDarkModeChange = () => {} }) => {
   const [settings, setSettings] = useState({
@@ -45,7 +45,7 @@ const Settings = ({ darkMode = false, onDarkModeChange = () => {} }) => {
       // Save to localStorage for now
       localStorage.setItem('scanningSettings', JSON.stringify(settings));
       // TODO: Send to API when backend endpoint is available
-      // await axios.post('http://localhost:8080/settings', settings);
+      await apiClient.post('/settings', settings);
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
     } catch (error) {

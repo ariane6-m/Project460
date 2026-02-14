@@ -1,7 +1,7 @@
 const express = require('express');
 const client = require('prom-client');
 const rbac = require('./src/middleware/rbac');
-const auditLogger = require('./src/services/auditLogger');
+const { auditLogger } = require('./src/services/auditLogger');
 
 
 const app = express();
@@ -92,4 +92,3 @@ app.get('/metrics/json', (req, res) => {
     }
   });
 });
-

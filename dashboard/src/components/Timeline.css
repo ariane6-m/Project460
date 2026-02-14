@@ -1,0 +1,73 @@
+.timeline-container {
+  padding: 20px;
+}
+
+.timeline-container h2 {
+  color: #333;
+  margin-bottom: 20px;
+  font-size: 24px;
+}
+
+.timeline-list {
+  position: relative;
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px 0;
+}
+
+.timeline-list::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 20px; /* Adjust as needed for dot positioning */
+  width: 2px;
+  height: 100%;
+  background-color: #e0e0e0;
+}
+
+.timeline-item {
+  display: flex;
+  margin-bottom: 30px;
+  position: relative;
+}
+
+.timeline-dot {
+  width: 12px;
+  height: 12px;
+  background-color: #007bff;
+  border-radius: 50%;
+  position: absolute;
+  left: 15px; /* Align with the line */
+  top: 5px;
+  z-index: 1;
+  border: 2px solid #fff; /* White border for visibility */
+}
+
+.timeline-content {
+  margin-left: 40px; /* Space for dot and line */
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  padding: 15px 20px;
+  text-align: left;
+  flex-grow: 1;
+}
+
+.event-time {
+  font-size: 0.8em;
+  color: #888;
+  margin-bottom: 5px;
+  display: block;
+}
+
+.event-type {
+  margin: 0 0 5px 0;
+  color: #0056b3;
+  font-size: 18px;
+}
+
+.event-description {
+  margin: 0;
+  color: #333;
+  font-size: 0.9em;
+}
