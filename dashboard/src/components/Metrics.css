@@ -2,34 +2,26 @@
   padding: 20px;
 }
 
-.metrics-container h2 {
-  color: #333;
-  margin-bottom: 20px;
-  font-size: 24px;
-}
-
 .metrics-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: 20px;
 }
 
 .metric-card {
-  background-color: #fff;
+  background-color: #f9f9f9;
+  border: 1px solid #ddd;
   border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   padding: 20px;
-  text-align: left;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-.metric-card h3 {
-  color: #007bff;
-  margin-bottom: 10px;
-  font-size: 18px;
+.dark-mode .metric-card {
+  background-color: #333;
+  border-color: #555;
+  color: #fff;
 }
 
-.metric-card p {
-  font-size: 1.2em;
-  font-weight: bold;
-  color: #555;
+.error {
+  color: #e74c3c;
 }

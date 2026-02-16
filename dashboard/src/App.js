@@ -1,18 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Sidebar from './components/Sidebar'; // Import Sidebar
 import Scanning from './components/Scanning';
-import IDS from './components/IDS';
 import Settings from './components/Settings';
+import DeviceHistory from './components/DeviceHistory'; // Import DeviceHistory
+import Metrics from './components/Metrics';
+import Graphs from './components/Graphs';
+import Devices from './components/Devices';
+import Alerts from './components/Alerts';
+import Timeline from './components/Timeline';
+import LoginPage from './components/LoginPage';
+import ProtectedRoute from './components/ProtectedRoute';
 import './App.css';
-
-// Placeholder Components for new sections
-const Metrics = () => <h2>System Metrics Placeholder</h2>;
-const Graphs = () => <h2>Live Activity Graphs Placeholder</h2>;
-const Devices = () => <h2>Device List Placeholder</h2>;
-const Alerts = () => <h2>Alerts Panel Placeholder</h2>;
-const Timeline = () => <h2>Event Timeline Placeholder</h2>;
 
 const Dashboard = () => {
   return (
@@ -30,12 +30,6 @@ const Dashboard = () => {
         </div>
 
         <div className="dashboard-card">
-          <h3>🛡️ Intrusion Detection</h3>
-          <p>Monitor your network for suspicious activity and security threats. Start the IDS to receive real-time alerts about potential threats.</p>
-          <a href="/ids" className="dashboard-link">Go to IDS →</a>
-        </div>
-
-        <div className="dashboard-card">
           <h3>⚙️ Settings</h3>
           <p>Customize how your security tools work. Configure scan frequency, alert sensitivity, and data retention settings.</p>
           <a href="/settings" className="dashboard-link">Go to Settings →</a>
@@ -48,6 +42,34 @@ const Dashboard = () => {
       </div>
     </div>
   );
+}
+
+const MainLayout = ({ children, darkMode, toggleDarkMode }) => {
+    const [isSidebarOpen, setIsSidebarOpen] = useState(true); // State to manage sidebar visibility
+
+    const toggleSidebar = () => {
+        setIsSidebarOpen(!isSidebarOpen);
+    };
+
+    return (
+        <div className="App-container">
+            <Sidebar isOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />
+            <div className={`main-content-wrapper ${isSidebarOpen ? 'sidebar-open' : 'sidebar-closed'}`}>
+                <header className="App-header">
+                    <button className="hamburger-btn" onClick={toggleSidebar}>
+                        &#9776; {/* Hamburger Icon */}
+                    </button>
+                    <div className="header-content"> {/* Wrap h1 and Navbar for better alignment */}
+                        <h1>Moto-Moto</h1>
+                        <Navbar />
+                    </div>
+                </header>
+                <main className="main-content">
+                    {children}
+                </main>
+            </div>
+        </div>
+    );
 }
 
 function App() {
@@ -69,42 +91,31 @@ function App() {
     setDarkMode(!darkMode);
   };
 
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true); // State to manage sidebar visibility
-
-  const toggleSidebar = () => {
-    setIsSidebarOpen(!isSidebarOpen);
-  };
-
   return (
     <Router>
-      <div className="App-container">
-        <Sidebar isOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />
-        <div className={`main-content-wrapper ${isSidebarOpen ? 'sidebar-open' : 'sidebar-closed'}`}>
-          <header className="App-header">
-            <button className="hamburger-btn" onClick={toggleSidebar}>
-              &#9776; {/* Hamburger Icon */}
-            </button>
-            <div className="header-content"> {/* Wrap h1 and Navbar for better alignment */}
-              <h1>Moto-Moto</h1>
-              <Navbar />
-            </div>
-          </header>
-          <main className="main-content">
-            <Routes>
-              <Route path="/" element={<Dashboard />} />
-              <Route path="/scanning" element={<Scanning />} />
-              <Route path="/ids" element={<IDS />} />
-              <Route path="/settings" element={<Settings darkMode={darkMode} onDarkModeChange={toggleDarkMode} />} />
-              {/* New Routes */}
-              <Route path="/metrics" element={<Metrics />} />
-              <Route path="/graphs" element={<Graphs />} /> {/* Corrected typo here */}
-              <Route path="/devices" element={<Devices />} />
-              <Route path="/alerts" element={<Alerts />} />
-              <Route path="/timeline" element={<Timeline />} />
-            </Routes>
-          </main>
-        </div>
-      </div>
+      <Routes>
+        <Route path="/login" element={<LoginPage />} />
+        <Route
+          path="/*"
+          element={
+            <ProtectedRoute>
+              <MainLayout darkMode={darkMode} toggleDarkMode={toggleDarkMode}>
+                <Routes>
+                  <Route path="/" element={<Dashboard />} />
+                  <Route path="/scanning" element={<Scanning />} />
+                  <Route path="/settings" element={<Settings darkMode={darkMode} onDarkModeChange={toggleDarkMode} />} />
+                  <Route path="/metrics" element={<Metrics />} />
+                  <Route path="/graphs" element={<Graphs />} />
+                  <Route path="/devices" element={<Devices />} />
+                  <Route path="/alerts" element={<Alerts />} />
+                  <Route path="/timeline" element={<Timeline />} />
+                  <Route path="/device-history" element={<DeviceHistory />} />
+                </Routes>
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+      </Routes>
     </Router>
   );
 }

@@ -1,5 +1,5 @@
 :root {
-  --sidebar-width-open: 200px;
+  --sidebar-width-open: 250px;
   --sidebar-width-closed: 0px; /* Changed to 0px for completely hidden */
   --header-height: 60px; /* Define a consistent header height */
 }
@@ -42,9 +42,13 @@
   z-index: 101; /* Ensure header is above sidebar */
   transition: left 0.3s ease, width 0.3s ease;
   box-sizing: border-box; /* Include padding in width/height */
+  /* Remove dynamic adjustments from here */
+  left: 0;
+  width: 100%;
 }
 
 /* Adjust header left/width based on sidebar state */
+/* These rules are now redundant if main-content handles its own margin */
 .main-content-wrapper.sidebar-open .App-header {
   left: var(--sidebar-width-open);
   width: calc(100% - var(--sidebar-width-open));
@@ -77,12 +81,11 @@
 }
 
 .main-content {
-  flex-grow: 1;
-  padding: 20px;
-  background-color: #f0f2f5; /* Light background for main content */
-  padding-top: calc(var(--header-height) + 20px); /* Space for fixed header + some extra padding */
-  box-sizing: border-box; /* Include padding in height */
-  overflow-y: auto; /* Allow scrolling for main content */
+    margin-left: 250px; /* match your sidebar width */
+    padding: 20px;
+    width: calc(100% - 250px);
+  min-height: 100vh;
+  background-color: #f5f5f5; /* or your content background */
 }
 
 .dashboard-content {
@@ -124,6 +127,10 @@
 .App-header h1 {
   margin: 0;
   font-size: 24px;
+}
+
+h1, h2, h3 {
+    text-align: center;
 }
 
 main {
@@ -498,7 +505,7 @@ nav a:hover {
   text-align: center;
   color: #999;
   padding: 40px 20px;
-  font-size: 16px;
+  font-s-size: 16px;
 }
 
 /* Device Filter Styles */
@@ -736,7 +743,7 @@ body.dark-mode .dashboard-link {
   color: #4a9eff;
 }
 
-body.dark-mode .dashboard-link:hover {
+.dashboard-link:hover {
   color: #6bb3ff;
 }
 
@@ -857,7 +864,7 @@ body.dark-mode .detail-label {
   color: #888;
 }
 
-body.dark-mode .detail-value {
+body.dark-od .detail-value {
   color: #e0e0e0;
 }
 
@@ -888,3 +895,4 @@ body.dark-mode .toggle-label {
 body.dark-mode .dark-mode-toggle {
   color: #e0e0e0;
 }
+

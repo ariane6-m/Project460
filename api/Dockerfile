@@ -12,6 +12,10 @@ COPY package-lock.json ./
 RUN --mount=type=cache,target=/root/.npm \
     npm ci --only=production
 
+# Switch to root to install nmap, then back to node
+USER root
+RUN apk add --no-cache nmap
+
 # Copy application source
 COPY . .
 

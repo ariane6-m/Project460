@@ -22,6 +22,7 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
             <h3>Devices</h3>
             <ul>
               <li><NavLink to="/devices">Device List</NavLink></li>
+              <li><NavLink to="/device-history">Device History</NavLink></li>
             </ul>
           </li>
           <li>

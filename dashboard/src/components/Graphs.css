@@ -2,38 +2,12 @@
   padding: 20px;
 }
 
-.graphs-container h2 {
-  color: #333;
-  margin-bottom: 20px;
-  font-size: 24px;
-}
-
-.graph-wrapper {
-  background-color: #fff;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  padding: 20px;
+.chart-wrapper {
   position: relative;
-  overflow: hidden; /* Ensures animation stays within bounds */
-}
-
-/* Optional: Add a subtle animation for heat-wave effect */
-@keyframes heatwave {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
-}
-
-.graph-wrapper::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
+  height: 60vh;
   width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, rgba(75, 192, 192, 0.1) 0%, rgba(75, 192, 192, 0.3) 50%, rgba(75, 192, 192, 0.1) 100%);
-  background-size: 200% 100%;
-  animation: heatwave 10s linear infinite;
-  opacity: 0.3;
-  pointer-events: none; /* Allows clicks to pass through */
+}
+
+.error {
+  color: #e74c3c;
 }
