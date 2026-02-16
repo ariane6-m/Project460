@@ -1,8 +1,15 @@
 import React, { useState } from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
 import './Sidebar.css';
 
 const Sidebar = ({ isOpen, toggleSidebar }) => {
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    navigate('/login');
+  };
+
   return (
     <div className={`sidebar ${isOpen ? 'open' : 'closed'}`}>
       <div className="sidebar-header">
@@ -36,10 +43,11 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
             <h3>Tools</h3>
             <ul>
               <li><NavLink to="/scanning">Network Scanning</NavLink></li>
-              <li><NavLink to="/ids">Intrusion Detection</NavLink></li>
+
             </ul>
           </li>
           <li><NavLink to="/settings">Settings</NavLink></li>
+          <li><button onClick={handleLogout} className="logout-button">Logout</button></li>
         </ul>
       </nav>
     </div>

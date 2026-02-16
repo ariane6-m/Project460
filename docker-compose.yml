@@ -7,8 +7,6 @@ services:
       NODE_ENV: development
     volumes:
       - ./api:/usr/src/app
-    networks:
-      - monitoring
 
   dashboard:
     build:
@@ -23,18 +21,3 @@ services:
       - /app/node_modules
     depends_on:
       - api
-    networks:
-      - monitoring
-
-  prometheus:
-    image: prom/prometheus:latest
-    ports:
-      - "9090:9090"
-    volumes:
-      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
-    networks:
-      - monitoring
-
-networks:
-  monitoring:
-    driver: bridge

@@ -3,27 +3,78 @@ const client = require('prom-client');
 const rbac = require('./src/middleware/rbac');
 const { auditMiddleware, getEvents } = require('./src/services/auditLogger');
 const cors = require('cors');
-
+const jwt = require('jsonwebtoken');
+const bodyParser = require('body-parser');
+const bcrypt = require('bcryptjs'); // Import bcryptjs
 
 const app = express();
 const port = 8080;
 
+const JWT_SECRET = 'your-secret-key'; // In a real app, use an environment variable
+
+// Temporary in-memory user store (replace with a database in a real application)
+const users = [
+  { username: 'admin', passwordHash: bcrypt.hashSync('password', 10), role: 'Admin' }
+];
+
 // Middleware to parse JSON bodies
-app.use(express.json());
+app.use(bodyParser.json());
 app.use(cors());
 
-// This is a placeholder for your actual authentication middleware
-// It should populate req.user with the user's data, including their role
+// JWT authentication middleware
 app.use((req, res, next) => {
-  // For demonstration purposes, we'll add a mock user.
-  // In a real application, you would implement proper authentication (e.g., JWT, OAuth).
-  // You can change 'Viewer' to 'Admin' to test different roles.
-  req.user = { id: 'admin', role: 'Admin' };
-  next();
+  if (req.path === '/login' || req.path === '/register') { // Allow /register without token
+    return next();
+  }
+
+  const authHeader = req.headers.authorization;
+  if (authHeader) {
+    const token = authHeader.split(' ')[1];
+    jwt.verify(token, JWT_SECRET, (err, user) => {
+      if (err) {
+        return res.sendStatus(403); // Forbidden
+      }
+      req.user = user;
+      next();
+    });
+  } else {
+    res.sendStatus(401); // Unauthorized
+  }
 });
 
 // Audit logger middleware
 app.use(auditMiddleware);
+
+// Registration endpoint
+app.post('/register', async (req, res) => {
+    const { username, password } = req.body;
+
+    if (!username || !password) {
+        return res.status(400).send('Username and password are required.');
+    }
+
+    if (users.find(u => u.username === username)) {
+        return res.status(409).send('Username already exists.');
+    }
+
+    const passwordHash = await bcrypt.hash(password, 10);
+    const newUser = { username, passwordHash, role: 'Viewer' }; // New users are 'Viewer' by default
+    users.push(newUser);
+    res.status(201).send('User registered successfully.');
+});
+
+app.post('/login', async (req, res) => {
+    const { username, password } = req.body;
+    
+    const user = users.find(u => u.username === username);
+
+    if (user && await bcrypt.compare(password, user.passwordHash)) {
+        const token = jwt.sign({ username, role: user.role }, JWT_SECRET, { expiresIn: '1h' });
+        res.json({ token });
+    } else {
+        res.status(401).send('Invalid credentials');
+    }
+});
 
 // Create a Registry to register the metrics
 const register = new client.Registry();

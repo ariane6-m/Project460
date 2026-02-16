@@ -9,7 +9,11 @@ function rbac(req, res, next) {
   }
 
   const { role } = req.user;
-  const namespace = req.params.namespace || req.body.namespace || req.query.namespace;
+
+  // Safely access namespace from req.params, req.body, or req.query
+  const namespace = (req.params && req.params.namespace) ||
+                    (req.body && req.body.namespace) ||
+                    (req.query && req.query.namespace);
 
   if (role === 'Admin') {
     return next();
