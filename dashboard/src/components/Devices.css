@@ -1,0 +1,62 @@
+.devices-container {
+  padding: 20px;
+}
+
+.devices-container h2 {
+  color: #333;
+  margin-bottom: 20px;
+  font-size: 24px;
+}
+
+.device-list {
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  padding: 20px;
+}
+
+.device-item {
+  border-bottom: 1px solid #eee;
+  padding: 15px 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.device-item:last-child {
+  border-bottom: none;
+}
+
+.device-info h3 {
+  margin: 0 0 5px 0;
+  color: #0056b3;
+  font-size: 18px;
+}
+
+.device-info p {
+  margin: 0;
+  color: #666;
+  font-size: 0.9em;
+}
+
+.device-status {
+  padding: 5px 10px;
+  border-radius: 15px;
+  font-size: 0.8em;
+  font-weight: bold;
+  color: white;
+  margin-left: 10px;
+}
+
+.status-online {
+  background-color: #28a745;
+}
+
+.status-offline {
+  background-color: #dc3545;
+}
+
+.status-maintenance {
+  background-color: #ffc107;
+  color: #333; /* Darker text for better contrast on yellow */
+}

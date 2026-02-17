@@ -1,0 +1,27 @@
+.metrics-container {
+  padding: 20px;
+}
+
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 20px;
+}
+
+.metric-card {
+  background-color: #f9f9f9;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.dark-mode .metric-card {
+  background-color: #333;
+  border-color: #555;
+  color: #fff;
+}
+
+.error {
+  color: #e74c3c;
+}

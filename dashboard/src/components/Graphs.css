@@ -1,0 +1,13 @@
+.graphs-container {
+  padding: 20px;
+}
+
+.chart-wrapper {
+  position: relative;
+  height: 60vh;
+  width: 100%;
+}
+
+.error {
+  color: #e74c3c;
+}

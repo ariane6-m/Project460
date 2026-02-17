@@ -1,0 +1,107 @@
+.sidebar {
+  width: var(--sidebar-width-open); /* Use CSS variable for open width */
+  background-color: #333;
+  color: white;
+  padding: 20px;
+  height: 100vh;
+  position: fixed;
+  left: 0;
+  top: 0;
+  transition: width 0.3s ease, padding 0.3s ease; /* Add padding to transition */
+  z-index: 100; /* Lower z-index to avoid overlapping header */
+}
+
+.sidebar.closed {
+  width: var(--sidebar-width-closed);
+  padding: 20px 0; /* Adjust padding for closed state */
+  overflow: hidden; /* Hide content when closed */
+}
+
+.sidebar-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-left: 10px; /* Consistent with hamburger button */
+}
+
+.sidebar h2 { /* Targeting the "Menu" title */
+  margin-left: 10px; /* Space between hamburger and "Menu" */
+  font-size: 24px;
+  color: white;
+  white-space: nowrap; /* Prevent text wrapping */
+}
+
+.hamburger-btn { /* This rule is kept but button moved to App.js, so this should be fine */
+  background: none;
+  border: none;
+  color: white;
+  font-size: 24px;
+  cursor: pointer;
+  padding: 0 10px;
+}
+
+.sidebar.closed .sidebar-header h2 {
+  display: none;
+}
+
+.sidebar.closed nav {
+  display: none;
+}
+
+.sidebar ul {
+  list-style: none;
+  padding: 0;
+}
+
+.sidebar li {
+  margin-bottom: 10px;
+}
+
+.sidebar a {
+  color: white;
+  text-decoration: none;
+  display: block;
+  padding: 5px 20px; /* Add left padding for alignment */
+  transition: opacity 0.3s ease;
+  white-space: nowrap; /* Prevent text wrapping */
+}
+
+.sidebar a:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.sidebar a.active {
+  font-weight: bold;
+  background-color: #555;
+}
+
+.sidebar h3 {
+  color: #aaa;
+  margin-top: 20px;
+  margin-bottom: 10px;
+  font-size: 0.9em;
+  text-transform: uppercase;
+  padding-left: 20px; /* Add left padding for alignment */
+  transition: opacity 0.3s ease;
+  white-space: nowrap; /* Prevent text wrapping */
+}
+
+.logout-button {
+  background: none;
+  border: none;
+  color: white;
+  text-decoration: none;
+  display: block;
+  padding: 5px 20px;
+  transition: opacity 0.3s ease;
+  white-space: nowrap;
+  font-size: 1em;
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+  font-family: inherit;
+}
+
+.logout-button:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}

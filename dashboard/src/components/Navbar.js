@@ -12,9 +12,6 @@ const Navbar = () => {
           <Link to="/scanning">Scanning</Link>
         </li>
         <li>
-          <Link to="/ids">IDS</Link>
-        </li>
-        <li>
           <Link to="/settings">Settings</Link>
         </li>
       </ul>
