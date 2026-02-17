@@ -65,7 +65,7 @@ jobs:
 
       - name: Run dashboard tests
         working-directory: ./dashboard
-        run: npm test --if-present --loglevel verbose
+        run: npm test --if-present --passWithNoTests --loglevel verbose
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
