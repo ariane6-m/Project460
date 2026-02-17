@@ -59,7 +59,7 @@ jobs:
 
       - name: Install dashboard dependencies
         working-directory: ./dashboard
-        run: npm ci --loglevel verbose
+        run: npm install --loglevel verbose
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
