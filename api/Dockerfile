@@ -1,5 +1,5 @@
 # Use specific Node.js version on Alpine for smaller image
-FROM node:22.9.0-alpine3.19
+FROM node:22.22.0-trixie-slim
 
 # Set the working directory
 WORKDIR /usr/src/app
