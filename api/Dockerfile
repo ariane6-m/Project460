@@ -14,7 +14,7 @@ RUN --mount=type=cache,target=/root/.npm \
 
 # Switch to root to install nmap, then back to node
 USER root
-RUN apk add --no-cache nmap
+RUN apt-get update && apt-get install -y nmap && rm -rf /var/lib/apt/lists/*
 
 # Copy application source
 COPY . .
