@@ -11,10 +11,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout @v4
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node @v4
         with:
           node-version: '20'
 
@@ -28,7 +28,7 @@ jobs:
 
       - name: Log in to GitHub Container Registry
         if: github.event_name == 'push'
-        uses: docker/login-action@v3
+        uses: docker/login-action @v3
         with:
           registry: ghcr.io
           username: ${{ github.repository_owner }}
@@ -36,20 +36,20 @@ jobs:
 
       - name: Build and push Docker image
         if: github.event_name == 'push'
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action @v5
         with:
           context: ./api
           push: true
-          tags: ghcr.io/${{ github.repository }}/api:${{ github.sha }}
+          tags: ghcr.io/ariane6-m/project460/api:${{ github.sha }}
 
   dashboard:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout @v4
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node @v4
         with:
           node-version: '20'
 
@@ -63,7 +63,7 @@ jobs:
 
       - name: Log in to GitHub Container Registry
         if: github.event_name == 'push'
-        uses: docker/login-action@v3
+        uses: docker/login-action @v3
         with:
           registry: ghcr.io
           username: ${{ github.repository_owner }}
@@ -71,8 +71,8 @@ jobs:
 
       - name: Build and push Docker image
         if: github.event_name == 'push'
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action @v5
         with:
           context: ./dashboard
           push: true
-          tags: ghcr.io/${{ github.repository }}/dashboard:${{ github.sha }}
+          tags: ghcr.io/ariane6-m/project460/dashboard:${{ github.sha }}
