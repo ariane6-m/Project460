@@ -57,13 +57,17 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Install dependencies
+      - name: Install dashboard dependencies
         working-directory: ./dashboard
-        run: npm install
+        run: npm ci --loglevel verbose
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Run tests
+      - name: Run dashboard tests
         working-directory: ./dashboard
-        run: npm test --if-present
+        run: npm test --if-present --loglevel verbose
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Log in to GitHub Container Registry
         if: github.event_name == 'push'
