@@ -10,6 +10,11 @@ function rbac(req, res, next) {
 
   const { role } = req.user;
 
+  // Restrict /admin/* routes to Admin only
+  if (req.path.startsWith('/admin') && role !== 'Admin') {
+    return res.status(403).send('Forbidden: Only Admin users can access administrative functions.');
+  }
+
   // Safely access namespace from req.params, req.body, or req.query
   const namespace = (req.params && req.params.namespace) ||
                     (req.body && req.body.namespace) ||

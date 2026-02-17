@@ -12,6 +12,7 @@ import Alerts from './components/Alerts';
 import Timeline from './components/Timeline';
 import LoginPage from './components/LoginPage';
 import ProtectedRoute from './components/ProtectedRoute';
+import AdminPanel from './components/AdminPanel'; // Import AdminPanel
 import './App.css';
 
 const Dashboard = () => {
@@ -110,6 +111,7 @@ function App() {
                   <Route path="/alerts" element={<Alerts />} />
                   <Route path="/timeline" element={<Timeline />} />
                   <Route path="/device-history" element={<DeviceHistory />} />
+                  <Route path="/admin" element={<AdminPanel />} />
                 </Routes>
               </MainLayout>
             </ProtectedRoute>

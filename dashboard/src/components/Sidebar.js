@@ -1,9 +1,28 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
+import { jwtDecode } from 'jwt-decode'; // Import jwtDecode
 import './Sidebar.css';
 
 const Sidebar = ({ isOpen, toggleSidebar }) => {
   const navigate = useNavigate();
+  const [userRole, setUserRole] = useState(null); // State to store user's role
+
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      try {
+        const decodedToken = jwtDecode(token);
+        setUserRole(decodedToken.role);
+      } catch (error) {
+        console.error("Error decoding token:", error);
+        // Handle invalid token, e.g., clear it and redirect to login
+        localStorage.removeItem('token');
+        navigate('/login');
+      }
+    } else {
+      setUserRole(null);
+    }
+  }, [navigate]);
 
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -43,10 +62,12 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
             <h3>Tools</h3>
             <ul>
               <li><NavLink to="/scanning">Network Scanning</NavLink></li>
-
             </ul>
           </li>
           <li><NavLink to="/settings">Settings</NavLink></li>
+          {userRole === 'Admin' && ( // Conditionally render Admin Panel for Admin users
+            <li><NavLink to="/admin">Admin Panel</NavLink></li>
+          )}
           <li><button onClick={handleLogout} className="logout-button">Logout</button></li>
         </ul>
       </nav>

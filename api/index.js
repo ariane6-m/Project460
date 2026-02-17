@@ -76,6 +76,32 @@ app.post('/login', async (req, res) => {
     }
 });
 
+// Admin - Get all users (Admin only)
+app.get('/admin/users', rbac, (req, res) => {
+    // Only return username and role
+    const usersData = users.map(user => ({ username: user.username, role: user.role }));
+    res.json(usersData);
+});
+
+// Admin - Change user role (Admin only)
+app.put('/admin/users/:username/role', rbac, (req, res) => {
+    const { username } = req.params;
+    const { role } = req.body;
+
+    if (!role || (role !== 'Admin' && role !== 'Viewer')) {
+        return res.status(400).send('Invalid role specified. Role must be Admin or Viewer.');
+    }
+
+    const userIndex = users.findIndex(u => u.username === username);
+
+    if (userIndex === -1) {
+        return res.status(404).send('User not found.');
+    }
+
+    users[userIndex].role = role;
+    res.send('User role updated successfully.');
+});
+
 // Create a Registry to register the metrics
 const register = new client.Registry();
 

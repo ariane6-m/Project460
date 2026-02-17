@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import apiClient from '../api';
+import { jwtDecode } from 'jwt-decode'; // Import jwtDecode
 
 const Settings = ({ darkMode = false, onDarkModeChange = () => {} }) => {
   const [settings, setSettings] = useState({
@@ -9,6 +10,7 @@ const Settings = ({ darkMode = false, onDarkModeChange = () => {} }) => {
     alertThreshold: 50,
     retentionDays: 30,
   });
+  const [userRole, setUserRole] = useState(null); // State to store user's role
   const [saved, setSaved] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -17,6 +19,16 @@ const Settings = ({ darkMode = false, onDarkModeChange = () => {} }) => {
     const savedSettings = localStorage.getItem('scanningSettings');
     if (savedSettings) {
       setSettings(JSON.parse(savedSettings));
+    }
+
+    const token = localStorage.getItem('token');
+    if (token) {
+      try {
+        const decodedToken = jwtDecode(token);
+        setUserRole(decodedToken.role);
+      } catch (error) {
+        console.error("Error decoding token:", error);
+      }
     }
   }, []);
 
@@ -40,12 +52,16 @@ const Settings = ({ darkMode = false, onDarkModeChange = () => {} }) => {
   };
 
   const handleSave = async () => {
+    if (userRole !== 'Admin') {
+      alert('You do not have permission to save advanced settings.');
+      return;
+    }
     setLoading(true);
     try {
       // Save to localStorage for now
       localStorage.setItem('scanningSettings', JSON.stringify(settings));
       // TODO: Send to API when backend endpoint is available
-      await apiClient.post('/settings', settings);
+      // await apiClient.post('/settings', settings); // This endpoint needs to be admin-only on backend
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
     } catch (error) {
@@ -56,131 +72,137 @@ const Settings = ({ darkMode = false, onDarkModeChange = () => {} }) => {
 
   return (
     <div className="settings-container">
-      <h1>Scanning Preferences</h1>
+      <h1>Settings</h1>
       <div className="settings-content">
-        <div className="settings-section">
-          <h2>Scan Configuration</h2>
+        {userRole === 'Admin' && (
+          <>
+            <div className="settings-section">
+              <h2>Scan Configuration</h2>
 
-          <div className="settings-group">
-            <label htmlFor="scanInterval">Scan Interval (seconds)</label>
-            <input
-              id="scanInterval"
-              type="number"
-              name="scanInterval"
-              value={settings.scanInterval}
-              onChange={handleInputChange}
-              min="10"
-              max="3600"
-            />
-          </div>
+              <div className="settings-group">
+                <label htmlFor="scanInterval">Scan Interval (seconds)</label>
+                <input
+                  id="scanInterval"
+                  type="number"
+                  name="scanInterval"
+                  value={settings.scanInterval}
+                  onChange={handleInputChange}
+                  min="10"
+                  max="3600"
+                />
+              </div>
 
-          <div className="settings-group">
-            <label>Scan Types</label>
-            <div className="checkbox-group">
-              <label className="checkbox-label">
-                <input
-                  type="checkbox"
-                  name="scanTypes"
-                  checked={settings.scanTypes.includes('network')}
-                  onChange={() => handleScanTypeChange('network')}
-                />
-                Network Scan
-              </label>
-              <label className="checkbox-label">
-                <input
-                  type="checkbox"
-                  name="scanTypes"
-                  checked={settings.scanTypes.includes('vulnerability')}
-                  onChange={() => handleScanTypeChange('vulnerability')}
-                />
-                Vulnerability Scan
-              </label>
-              <label className="checkbox-label">
-                <input
-                  type="checkbox"
-                  name="scanTypes"
-                  checked={settings.scanTypes.includes('malware')}
-                  onChange={() => handleScanTypeChange('malware')}
-                />
-                Malware Detection
-              </label>
+              <div className="settings-group">
+                <label>Scan Types</label>
+                <div className="checkbox-group">
+                  <label className="checkbox-label">
+                    <input
+                      type="checkbox"
+                      name="scanTypes"
+                      checked={settings.scanTypes.includes('network')}
+                      onChange={() => handleScanTypeChange('network')}
+                    />
+                    Network Scan
+                  </label>
+                  <label className="checkbox-label">
+                    <input
+                      type="checkbox"
+                      name="scanTypes"
+                      checked={settings.scanTypes.includes('vulnerability')}
+                      onChange={() => handleScanTypeChange('vulnerability')}
+                    />
+                    Vulnerability Scan
+                  </label>
+                  <label className="checkbox-label">
+                    <input
+                      type="checkbox"
+                      name="scanTypes"
+                      checked={settings.scanTypes.includes('malware')}
+                      onChange={() => handleScanTypeChange('malware')}
+                    />
+                    Malware Detection
+                  </label>
+                </div>
+              </div>
+
+              <div className="settings-group">
+                <label className="checkbox-label">
+                  <input
+                    type="checkbox"
+                    name="autoStartScanning"
+                    checked={settings.autoStartScanning}
+                    onChange={handleInputChange}
+                  />
+                  Auto-start scanning on application launch
+                </label>
+              </div>
             </div>
-          </div>
+
+            <div className="settings-section">
+              <h2>Alert Settings</h2>
+
+              <div className="settings-group">
+                <label htmlFor="alertThreshold">Alert Threshold (%)</label>
+                <input
+                  id="alertThreshold"
+                  type="number"
+                  name="alertThreshold"
+                  value={settings.alertThreshold}
+                  onChange={handleInputChange}
+                  min="0"
+                  max="100"
+                />
+              </div>
+            </div>
+
+            <div className="settings-section">
+              <h2>Data Management</h2>
+
+              <div className="settings-group">
+                <label htmlFor="retentionDays">Scan History Retention (days)</label>
+                <input
+                  id="retentionDays"
+                  type="number"
+                  name="retentionDays"
+                  value={settings.retentionDays}
+                  onChange={handleInputChange}
+                  min="1"
+                  max="365"
+                />
+              </div>
+            </div>
+          </>
+        )}
+
+        <div className="settings-section">
+          <h2>Display Preferences</h2>
 
           <div className="settings-group">
-            <label className="checkbox-label">
+            <label className="checkbox-label dark-mode-toggle">
               <input
                 type="checkbox"
-                name="autoStartScanning"
-                checked={settings.autoStartScanning}
-                onChange={handleInputChange}
+                name="darkMode"
+                checked={darkMode}
+                onChange={onDarkModeChange}
               />
-              Auto-start scanning on application launch
+              <span className="toggle-label">Dark Mode</span>
             </label>
+            <p className="setting-description">Toggle dark theme for reduced eye strain in low-light environments</p>
           </div>
         </div>
 
-        <div className="settings-section">
-          <h2>Alert Settings</h2>
-
-          <div className="settings-group">
-            <label htmlFor="alertThreshold">Alert Threshold (%)</label>
-            <input
-              id="alertThreshold"
-              type="number"
-              name="alertThreshold"
-              value={settings.alertThreshold}
-              onChange={handleInputChange}
-              min="0"
-              max="100"
-            />
+        {userRole === 'Admin' && (
+          <div className="settings-actions">
+            <button
+              className="save-button"
+              onClick={handleSave}
+              disabled={loading}
+            >
+              {loading ? 'Saving...' : 'Save Settings'}
+            </button>
+            {saved && <span className="success-message">Settings saved successfully!</span>}
           </div>
-        </div>
-
-        <div className="settings-section">
-          <h2>Data Management</h2>
-
-          <div className="settings-group">
-            <label htmlFor="retentionDays">Scan History Retention (days)</label>
-            <input
-              id="retentionDays"
-              type="number"
-              name="retentionDays"
-              value={settings.retentionDays}
-              onChange={handleInputChange}
-              min="1"
-              max="365"
-            />
-          </div>
-        </div>
-
-          <div className="settings-section">
-            <h2>Display Preferences</h2>
-
-            <div className="settings-group">
-              <label className="checkbox-label dark-mode-toggle">
-                <input
-                  type="checkbox"
-                  name="darkMode"
-                  checked={darkMode}
-                  onChange={onDarkModeChange}
-                />
-                <span className="toggle-label">Dark Mode</span>
-              </label>
-              <p className="setting-description">Toggle dark theme for reduced eye strain in low-light environments</p>
-            </div>
-          </div>
-
-        <div className="settings-actions">
-          <button
-            className="save-button"
-            onClick={handleSave}
-            disabled={loading}
-          >
-            {loading ? 'Saving...' : 'Save Settings'}
-          </button>
-          {saved && <span className="success-message">Settings saved successfully!</span>}
-        </div>
+        )}
       </div>
     </div>
   );
