@@ -1,4 +1,4 @@
-# Use specific Node.js version on Alpine for smaller image
+# Use specific Node.js version on Debian for smaller image
 FROM node:22.22.0-trixie-slim
 
 # Set the working directory
