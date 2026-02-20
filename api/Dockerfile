@@ -1,5 +1,5 @@
-# Use specific Node.js version on Alpine for smaller image
-FROM node:18.20-alpine3.19
+# Use specific Node.js version on Debian for smaller image
+FROM node:22.22.0-trixie-slim
 
 # Set the working directory
 WORKDIR /usr/src/app
@@ -14,7 +14,7 @@ RUN --mount=type=cache,target=/root/.npm \
 
 # Switch to root to install nmap, then back to node
 USER root
-RUN apk add --no-cache nmap
+RUN apt-get update && apt-get install -y nmap && rm -rf /var/lib/apt/lists/*
 
 # Copy application source
 COPY . .

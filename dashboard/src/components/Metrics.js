@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import apiClient from '../api';
 import './Metrics.css';
 
@@ -12,7 +13,11 @@ const Metrics = () => {
         const response = await apiClient.get('/metrics/json');
         setMetrics(response.data);
       } catch (err) {
-        setError('Failed to fetch metrics. Please make sure the API is running.');
+        if (err.response && (err.response.status === 401 || err.response.status === 403)) {
+          setError(<span>Failed to fetch metrics. Please <Link to="/login">login</Link> to view system metrics.</span>);
+        } else {
+          setError('Failed to fetch metrics. Please make sure the API is running.');
+        }
         console.error(err);
       }
     };
