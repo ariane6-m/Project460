@@ -6,11 +6,19 @@ const cors = require('cors');
 const jwt = require('jsonwebtoken');
 const bodyParser = require('body-parser');
 const bcrypt = require('bcryptjs'); // Import bcryptjs
+const rateLimit = require('express-rate-limit');
 
 const app = express();
 const port = 8080;
 
 const JWT_SECRET = 'your-secret-key'; // In a real app, use an environment variable
+
+const scanRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10, // limit each IP to 10 scan requests per windowMs
+  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+});
 
 // Temporary in-memory user store (replace with a database in a real application)
 const users = [
@@ -149,7 +157,7 @@ const xml2js = require('xml2js');
 
 let devices = []; // In-memory storage for scanned devices
 
-app.post('/scan', rbac, (req, res) => {
+app.post('/scan', scanRateLimiter, rbac, (req, res) => {
   const { target } = req.body;
 
   if (!target) {
