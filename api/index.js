@@ -20,6 +20,14 @@ const scanRateLimiter = rateLimit({
   legacyHeaders: false, // Disable the `X-RateLimit-*` headers
 });
 
+// Rate limiter for authorization/JWT verification
+const authRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 300, // limit each IP to 300 authenticated requests per windowMs
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 // Temporary in-memory user store (replace with a database in a real application)
 const users = [
   { username: 'admin', passwordHash: bcrypt.hashSync('password', 10), role: 'Admin' }
@@ -30,7 +38,7 @@ app.use(bodyParser.json());
 app.use(cors());
 
 // JWT authentication middleware
-app.use((req, res, next) => {
+app.use(authRateLimiter, (req, res, next) => {
   if (req.path === '/login' || req.path === '/register') { // Allow /register without token
     return next();
   }
