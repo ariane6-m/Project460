@@ -152,7 +152,7 @@ app.get('/hello', (req, res) => {
 });
 
 const os = require('os-utils');
-const { exec } = require('child_process');
+const { execFile } = require('child_process');
 const xml2js = require('xml2js');
 
 let devices = []; // In-memory storage for scanned devices
@@ -164,10 +164,16 @@ app.post('/scan', scanRateLimiter, rbac, (req, res) => {
     return res.status(400).send('Target is required');
   }
 
-  // -T4 for faster timing, -F for fast port scan, -oX - for XML output to stdout
-  const command = `nmap -T4 -F -oX - ${target}`;
+  // Basic allowlist: IPv4, IPv6, hostname, or CIDR-style characters only
+  const safeTargetPattern = /^[A-Za-z0-9\.\-_:\/]+$/;
+  if (!safeTargetPattern.test(target)) {
+    return res.status(400).send('Invalid target format');
+  }
 
-  exec(command, (error, stdout, stderr) => {
+  // -T4 for faster timing, -F for fast port scan, -oX - for XML output to stdout
+  const args = ['-T4', '-F', '-oX', '-', target];
+
+  execFile('nmap', args, (error, stdout, stderr) => {
     if (error) {
       console.error(`exec error: ${error}`);
       return res.status(500).send(`Error executing nmap: ${error.message}`);
