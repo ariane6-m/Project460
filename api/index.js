@@ -144,7 +144,7 @@ app.get('/hello', (req, res) => {
 });
 
 const os = require('os-utils');
-const { exec } = require('child_process');
+const { execFile } = require('child_process');
 const xml2js = require('xml2js');
 
 let devices = []; // In-memory storage for scanned devices
@@ -156,13 +156,17 @@ app.post('/scan', rbac, (req, res) => {
     return res.status(400).send('Target is required');
   }
 
+  // Use execFile to prevent command injection. 
   // -T4 for faster timing, -F for fast port scan, -oX - for XML output to stdout
-  const command = `nmap -T4 -F -oX - ${target}`;
+  const args = ['-T4', '-F', '-oX', '-', target];
 
-  exec(command, (error, stdout, stderr) => {
+  execFile('nmap', args, (error, stdout, stderr) => {
     if (error) {
-      console.error(`exec error: ${error}`);
-      return res.status(500).send(`Error executing nmap: ${error.message}`);
+      console.error(`execFile error: ${error}`);
+      // Nmap returns 1 if it didn't find any hosts, which isn't necessarily an error for us
+      if (error.code !== 1) {
+        return res.status(500).send(`Error executing nmap: ${error.message}`);
+      }
     }
     if (stderr) {
       console.warn(`nmap stderr: ${stderr}`);
@@ -179,13 +183,13 @@ app.post('/scan', rbac, (req, res) => {
       }
       const hosts = Array.isArray(result.nmaprun.host) ? result.nmaprun.host : [result.nmaprun.host];
       devices = hosts.map(host => {
-        const ip = host.address.find(a => a.$.addrtype === 'ipv4')?.$.addr;
-        const mac = host.address.find(a => a.$.addrtype === 'mac')?.$.addr;
-        const vendor = host.address.find(a => a.$.addrtype === 'mac')?.$.vendor;
-        const hostname = host.hostnames[0]?.hostname[0]?.$.name || 'Unknown';
+        const ip = host.address?.find(a => a.$.addrtype === 'ipv4')?.$.addr;
+        const mac = host.address?.find(a => a.$.addrtype === 'mac')?.$.addr;
+        const vendor = host.address?.find(a => a.$.addrtype === 'mac')?.$.vendor;
+        const hostname = host.hostnames?.[0]?.hostname?.[0]?.$.name || 'Unknown';
 
-        const openPorts = host.ports[0]?.port
-          ?.filter(p => p.state[0]?.$.state === 'open')
+        const openPorts = host.ports?.[0]?.port
+          ?.filter(p => p.state?.[0]?.$.state === 'open')
           .map(p => p.$.portid) || [];
 
         return {
@@ -193,7 +197,7 @@ app.post('/scan', rbac, (req, res) => {
           hostname: hostname,
           vendor: vendor || 'Unknown',
           mac: mac || 'Unknown',
-          status: host.status[0]?.$.state || 'Unknown',
+          status: host.status?.[0]?.$.state || 'Unknown',
           openPorts: openPorts,
         };
       });
