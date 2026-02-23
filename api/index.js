@@ -284,7 +284,8 @@ app.get('/metrics/:namespace?', rbac, async (req, res) => {
     res.set('Content-Type', register.contentType);
     res.end(await register.metrics());
   } catch (ex) {
-    res.status(500).end(ex);
+    console.error('Error generating metrics:', ex);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
