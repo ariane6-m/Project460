@@ -2,30 +2,44 @@
   --sidebar-width-open: 250px;
   --sidebar-width-closed: 0px; /* Changed to 0px for completely hidden */
   --header-height: 60px; /* Define a consistent header height */
+  --widget-background: #ffffff;
+  --shadow-light: 0 2px 4px rgba(0, 0, 0, 0.1);
+  --text-color-primary: #333333;
+  --text-color-secondary: #666666;
+  --border-color: #eeeeee;
+  --input-border-color: #dddddd;
+  --input-background: #ffffff;
+  --accent-color: #282c34;
+  --accent-color-light: rgba(40, 44, 52, 0.1);
+  --danger-color: #dc3545;
+  --danger-background: #f8d7da;
 }
 
 .App-container {
   display: flex;
   min-height: 100vh;
-  overflow: hidden; /* Prevent horizontal scroll when sidebar is open/closed */
+  overflow-x: hidden; /* Prevent horizontal scroll when sidebar is open/closed */
 }
 
 /* Dynamic positioning for main content and header based on sidebar state */
 .main-content-wrapper {
   flex-grow: 1;
-  transition: margin-left 0.3s ease;
+  transition: margin-left 0.3s ease, width 0.3s ease;
   overflow-x: hidden; /* Prevent horizontal overflow of content */
   display: flex; /* Re-added flex for column layout of header and main */
   flex-direction: column;
   min-height: 100vh; /* Ensure it takes full height */
+  width: 100%;
 }
 
 .main-content-wrapper.sidebar-open {
   margin-left: var(--sidebar-width-open);
+  width: calc(100% - var(--sidebar-width-open));
 }
 
 .main-content-wrapper.sidebar-closed {
   margin-left: var(--sidebar-width-closed); /* Will be 0px */
+  width: 100%;
 }
 
 .App-header {
@@ -41,14 +55,11 @@
   height: var(--header-height); /* Fixed height */
   z-index: 101; /* Ensure header is above sidebar */
   transition: left 0.3s ease, width 0.3s ease;
-  box-sizing: border-box; /* Include padding in width/height */
-  /* Remove dynamic adjustments from here */
   left: 0;
   width: 100%;
 }
 
 /* Adjust header left/width based on sidebar state */
-/* These rules are now redundant if main-content handles its own margin */
 .main-content-wrapper.sidebar-open .App-header {
   left: var(--sidebar-width-open);
   width: calc(100% - var(--sidebar-width-open));
@@ -56,7 +67,7 @@
 
 .main-content-wrapper.sidebar-closed .App-header {
   left: var(--sidebar-width-closed); /* Will be 0px */
-  width: calc(100% - var(--sidebar-width-closed)); /* Will be 100% */
+  width: 100%;
 }
 
 /* Hamburger button styling (now in App.js) */
@@ -81,9 +92,8 @@
 }
 
 .main-content {
-    margin-left: 250px; /* match your sidebar width */
-    padding: 20px;
-    width: calc(100% - 250px);
+  padding: 20px;
+  padding-top: calc(var(--header-height) + 20px);
   min-height: 100vh;
   background-color: #f5f5f5; /* or your content background */
 }
@@ -701,6 +711,15 @@ nav a:hover {
 body.dark-mode {
   background-color: #1a1a1a;
   color: #e0e0e0;
+  --widget-background: #2d2d2d;
+  --text-color-primary: #e0e0e0;
+  --text-color-secondary: #b0b0b0;
+  --border-color: #444444;
+  --input-border-color: #444444;
+  --input-background: #1a1a1a;
+  --accent-color: #4a9eff;
+  --accent-color-light: rgba(74, 158, 255, 0.1);
+  --shadow-light: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
 body.dark-mode .App {

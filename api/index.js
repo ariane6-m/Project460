@@ -8,13 +8,29 @@ const bodyParser = require('body-parser');
 const bcrypt = require('bcryptjs'); // Import bcryptjs
 const os = require('os-utils');
 const si = require('systeminformation');
-const { exec } = require('child_process');
+const { execFile } = require('child_process');
 const xml2js = require('xml2js');
+const rateLimit = require('express-rate-limit');
 
 const app = express();
 const port = 8080;
 
 const JWT_SECRET = 'your-secret-key'; // In a real app, use an environment variable
+
+const scanRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10, // limit each IP to 10 scan requests per windowMs
+  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+});
+
+// Rate limiter for authorization/JWT verification
+const authRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 300, // limit each IP to 300 authenticated requests per windowMs
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 
 // Temporary in-memory user store (replace with a database in a real application)
 const users = [
@@ -26,7 +42,7 @@ app.use(bodyParser.json());
 app.use(cors());
 
 // JWT authentication middleware
-app.use((req, res, next) => {
+app.use(authRateLimiter, (req, res, next) => {
   if (req.path === '/login' || req.path === '/register') { // Allow /register without token
     return next();
   }
@@ -149,23 +165,33 @@ app.get('/hello', (req, res) => {
 
 let devices = []; // In-memory storage for scanned devices
 
-app.post('/scan', rbac, (req, res) => {
+app.post('/scan', scanRateLimiter, rbac, (req, res) => {
   const { target } = req.body;
 
   if (!target) {
     return res.status(400).send('Target is required');
   }
 
+  // Basic allowlist: IPv4, IPv6, hostname, or CIDR-style characters only
+  const safeTargetPattern = /^[A-Za-z0-9\.\-_:\/]+$/;
+  if (!safeTargetPattern.test(target)) {
+    return res.status(400).send('Invalid target format');
+  }
+
+  // Use execFile to prevent command injection. 
   // -T4 for faster timing, -F for fast port scan, -oX - for XML output to stdout
   // Added -Pn to skip host discovery and treat all hosts as online
-  const command = `nmap -T4 -F -Pn -oX - ${target}`;
+  const args = ['-T4', '-F', '-Pn', '-oX', '-', target];
 
-  console.log(`Executing command: ${command}`);
+  console.log(`Executing command: nmap ${args.join(' ')}`);
 
-  exec(command, { maxBuffer: 10 * 1024 * 1024 }, (error, stdout, stderr) => {
+  execFile('nmap', args, { maxBuffer: 10 * 1024 * 1024 }, (error, stdout, stderr) => {
     if (error) {
-      console.error(`exec error: ${error}`);
-      return res.status(500).send(`Error executing nmap: ${error.message}`);
+      console.error(`execFile error: ${error}`);
+      // Nmap returns 1 if it didn't find any hosts, which isn't necessarily an error for us
+      if (error.code !== 1) {
+        return res.status(500).send(`Error executing nmap: ${error.message}`);
+      }
     }
     if (stderr) {
       console.warn(`nmap stderr: ${stderr}`);
@@ -312,7 +338,8 @@ app.get('/metrics/:namespace?', rbac, async (req, res) => {
     res.set('Content-Type', register.contentType);
     res.end(await register.metrics());
   } catch (ex) {
-    res.status(500).end(ex);
+    console.error('Error generating metrics:', ex);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
