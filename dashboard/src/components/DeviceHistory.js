@@ -82,15 +82,16 @@ const DeviceHistory = () => {
         labels: historyData.map(item => new Date(item.timestamp)),
         datasets: [
             {
-                label: 'Temperature',
-                data: historyData.map(item => item.temperature),
+                label: 'Device Status (1=Online, 0=Offline)',
+                data: historyData.map(item => item.status),
                 borderColor: 'rgb(75, 192, 192)',
                 backgroundColor: 'rgba(75, 192, 192, 0.5)',
                 yAxisID: 'y',
+                stepped: true,
             },
             {
-                label: 'Humidity',
-                data: historyData.map(item => item.humidity),
+                label: 'Open Ports Count',
+                data: historyData.map(item => item.portCount),
                 borderColor: 'rgb(153, 102, 255)',
                 backgroundColor: 'rgba(153, 102, 255, 0.5)',
                 yAxisID: 'y1',
@@ -107,14 +108,14 @@ const DeviceHistory = () => {
             },
             title: {
                 display: true,
-                text: `Device History for ${selectedDevice}`,
+                text: `Scan History for ${selectedDevice}`,
             },
         },
         scales: {
             x: {
                 type: 'time',
                 time: {
-                    unit: 'hour',
+                    unit: 'day',
                     tooltipFormat: 'MMM d, h:mm a',
                 },
                 title: {
@@ -126,21 +127,28 @@ const DeviceHistory = () => {
                 type: 'linear',
                 display: true,
                 position: 'left',
+                min: 0,
+                max: 1,
+                ticks: {
+                    stepSize: 1,
+                    callback: (value) => value === 1 ? 'Online' : 'Offline'
+                },
                 title: {
                     display: true,
-                    text: 'Temperature (°C)',
+                    text: 'Availability',
                 },
             },
             y1: {
                 type: 'linear',
                 display: true,
                 position: 'right',
+                min: 0,
                 grid: {
                     drawOnChartArea: false,
                 },
                 title: {
                     display: true,
-                    text: 'Humidity (%)',
+                    text: 'Open Ports',
                 },
             },
         },

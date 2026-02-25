@@ -1,15 +1,32 @@
 services:
+  db:
+    image: postgres:15-alpine
+    restart: always
+    environment:
+      POSTGRES_USER: moto_user
+      POSTGRES_PASSWORD: moto_password
+      POSTGRES_DB: motomoto
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
   api:
     build: ./api
     ports:
       - "8080:8080"
     environment:
       NODE_ENV: development
+      DB_HOST: db
+      DB_USER: moto_user
+      DB_PASSWORD: moto_password
+      DB_NAME: motomoto
     volumes:
       - ./api:/usr/src/app
       - /usr/src/app/node_modules
+    depends_on:
+      - db
     extra_hosts:
       - "host.docker.internal:host-gateway"
+
   dashboard:
     build:
       context: ./dashboard
@@ -25,3 +42,6 @@ services:
       - api
     extra_hosts:
       - "host.docker.internal:host-gateway"
+
+volumes:
+  postgres_data:
