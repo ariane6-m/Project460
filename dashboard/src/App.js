@@ -13,9 +13,43 @@ import Timeline from './components/Timeline';
 import LoginPage from './components/LoginPage';
 import ProtectedRoute from './components/ProtectedRoute';
 import AdminPanel from './components/AdminPanel'; // Import AdminPanel
+import apiClient from './api';
 import './App.css';
 
 const Dashboard = () => {
+  const [stats, setStats] = useState({
+    devices: 0,
+    alerts: 0,
+    cpu: 0,
+    loading: true
+  });
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const [devicesRes, alertsRes, metricsRes] = await Promise.all([
+          apiClient.get('/devices'),
+          apiClient.get('/alerts'),
+          apiClient.get('/metrics/json')
+        ]);
+
+        setStats({
+          devices: devicesRes.data.length,
+          alerts: alertsRes.data.length,
+          cpu: metricsRes.data.cpuUsage * 100,
+          loading: false
+        });
+      } catch (err) {
+        console.error('Failed to fetch dashboard stats:', err);
+        setStats(prev => ({ ...prev, loading: false }));
+      }
+    };
+
+    fetchStats();
+    const interval = setInterval(fetchStats, 10000); // Refresh every 10 seconds
+    return () => clearInterval(interval);
+  }, []);
+
   return (
     <div className="dashboard-content">
       <h1>Dashboard</h1>
@@ -39,7 +73,28 @@ const Dashboard = () => {
 
       <div className="dashboard-stats">
         <h2>Quick Stats</h2>
-        <p className="stat-placeholder">Run scans to see real-time network statistics here.</p>
+        {stats.loading ? (
+          <p className="stat-placeholder">Loading stats...</p>
+        ) : (
+          <div className="stats-grid">
+            <div className="stat-card">
+              <span className="stat-label">Total Devices</span>
+              <span className="stat-value">{stats.devices}</span>
+            </div>
+            <div className="stat-card">
+              <span className="stat-label">Active Alerts</span>
+              <span className="stat-value">{stats.alerts}</span>
+            </div>
+            <div className="stat-card">
+              <span className="stat-label">CPU Usage</span>
+              <span className="stat-value">{stats.cpu.toFixed(1)}%</span>
+            </div>
+            <div className="stat-card">
+              <span className="stat-label">System Status</span>
+              <span className="stat-value" style={{ color: '#4caf50' }}>Healthy</span>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

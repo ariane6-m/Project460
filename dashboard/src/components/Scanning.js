@@ -11,19 +11,25 @@ const Scanning = () => {
   const [filteredDevices, setFilteredDevices] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [scanPerformed, setScanPerformed] = useState(false);
 
   // Parse various scan result formats into structured device data
   const parseResults = (data) => {
-    return data;
+    if (!Array.isArray(data)) return [];
+    return data.map(normalizeDevice);
   };
 
   const normalizeDevice = (device) => {
-    return device;
+    return {
+      ...device,
+      type: device.type || 'Network Device'
+    };
   };
 
   const handleScan = async () => {
     setLoading(true);
     setError('');
+    setScanPerformed(false);
     try {
       // The new endpoint requires a target
       const response = await apiClient.post('/scan', { target });
@@ -31,11 +37,13 @@ const Scanning = () => {
       const parsedDevices = parseResults(response.data);
       setDevices(parsedDevices);
       setFilteredDevices(parsedDevices);
+      setScanPerformed(true);
     } catch (err) {
-      setError(
-        err.response?.data?.message ||
-          'Scan failed. Please check your target and try again.'
-      );
+      const errorMessage = err.response?.data?.message || 
+                          (typeof err.response?.data === 'string' ? err.response.data : null) ||
+                          err.message ||
+                          'Scan failed. Please check your target and try again.';
+      setError(errorMessage);
       setDevices([]);
       setFilteredDevices([]);
     }
@@ -72,7 +80,13 @@ const Scanning = () => {
         </>
       )}
 
-      {!loading && devices.length === 0 && !error && (
+      {!loading && scanPerformed && devices.length === 0 && !error && (
+        <div className="no-results-message">
+          <p>No devices found for target: {target}. Try a different network range or check if devices are online.</p>
+        </div>
+      )}
+
+      {!loading && !scanPerformed && devices.length === 0 && !error && (
         <div className="scan-placeholder">
           <p>No scan results yet. Enter a target and start scanning.</p>
         </div>

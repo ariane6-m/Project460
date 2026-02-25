@@ -6,6 +6,10 @@ const cors = require('cors');
 const jwt = require('jsonwebtoken');
 const bodyParser = require('body-parser');
 const bcrypt = require('bcryptjs'); // Import bcryptjs
+const os = require('os-utils');
+const si = require('systeminformation');
+const { exec } = require('child_process');
+const xml2js = require('xml2js');
 
 const app = express();
 const port = 8080;
@@ -143,10 +147,6 @@ app.get('/hello', (req, res) => {
     res.send('Hello again!');
 });
 
-const os = require('os-utils');
-const { exec } = require('child_process');
-const xml2js = require('xml2js');
-
 let devices = []; // In-memory storage for scanned devices
 
 app.post('/scan', rbac, (req, res) => {
@@ -157,9 +157,12 @@ app.post('/scan', rbac, (req, res) => {
   }
 
   // -T4 for faster timing, -F for fast port scan, -oX - for XML output to stdout
-  const command = `nmap -T4 -F -oX - ${target}`;
+  // Added -Pn to skip host discovery and treat all hosts as online
+  const command = `nmap -T4 -F -Pn -oX - ${target}`;
 
-  exec(command, (error, stdout, stderr) => {
+  console.log(`Executing command: ${command}`);
+
+  exec(command, { maxBuffer: 10 * 1024 * 1024 }, (error, stdout, stderr) => {
     if (error) {
       console.error(`exec error: ${error}`);
       return res.status(500).send(`Error executing nmap: ${error.message}`);
@@ -168,36 +171,58 @@ app.post('/scan', rbac, (req, res) => {
       console.warn(`nmap stderr: ${stderr}`);
     }
 
+    console.log(`nmap stdout length: ${stdout.length}`);
+
     xml2js.parseString(stdout, (err, result) => {
       if (err) {
         console.error(`xml2js parse error: ${err}`);
+        console.error(`Raw stdout (first 500 chars): ${stdout.substring(0, 500)}`);
         return res.status(500).send('Error parsing nmap output.');
       }
+      
       if (!result || !result.nmaprun || !result.nmaprun.host) {
+        console.log('No hosts found in nmap output.');
         devices = [];
         return res.json([]);
       }
-      const hosts = Array.isArray(result.nmaprun.host) ? result.nmaprun.host : [result.nmaprun.host];
-      devices = hosts.map(host => {
-        const ip = host.address.find(a => a.$.addrtype === 'ipv4')?.$.addr;
-        const mac = host.address.find(a => a.$.addrtype === 'mac')?.$.addr;
-        const vendor = host.address.find(a => a.$.addrtype === 'mac')?.$.vendor;
-        const hostname = host.hostnames[0]?.hostname[0]?.$.name || 'Unknown';
 
-        const openPorts = host.ports[0]?.port
-          ?.filter(p => p.state[0]?.$.state === 'open')
-          .map(p => p.$.portid) || [];
+      try {
+        const hosts = Array.isArray(result.nmaprun.host) ? result.nmaprun.host : [result.nmaprun.host];
+        devices = hosts.map(host => {
+          const addresses = Array.isArray(host.address) ? host.address : (host.address ? [host.address] : []);
+          
+          const ip = addresses.find(a => a.$ && a.$.addrtype === 'ipv4')?.$.addr;
+          const mac = addresses.find(a => a.$ && a.$.addrtype === 'mac')?.$.addr;
+          const vendor = addresses.find(a => a.$ && a.$.addrtype === 'mac')?.$.vendor;
+          
+          let hostname = 'Unknown';
+          if (host.hostnames && host.hostnames[0] && host.hostnames[0].hostname) {
+            const hnames = Array.isArray(host.hostnames[0].hostname) ? host.hostnames[0].hostname : [host.hostnames[0].hostname];
+            hostname = hnames[0]?.$.name || 'Unknown';
+          }
 
-        return {
-          ip: ip || 'Unknown',
-          hostname: hostname,
-          vendor: vendor || 'Unknown',
-          mac: mac || 'Unknown',
-          status: host.status[0]?.$.state || 'Unknown',
-          openPorts: openPorts,
-        };
-      });
-      res.json(devices);
+          const portsArr = (host.ports && host.ports[0] && host.ports[0].port) ? 
+                           (Array.isArray(host.ports[0].port) ? host.ports[0].port : [host.ports[0].port]) : [];
+
+          const openPorts = portsArr
+            ?.filter(p => p.state && p.state[0] && p.state[0].$ && p.state[0].$.state === 'open')
+            .map(p => p.$.portid) || [];
+
+          return {
+            ip: ip || 'Unknown',
+            hostname: hostname,
+            vendor: vendor || 'Unknown',
+            mac: mac || 'Unknown',
+            status: (host.status && host.status[0] && host.status[0].$) ? host.status[0].$.state : 'Unknown',
+            openPorts: openPorts,
+          };
+        });
+        res.json(devices);
+      } catch (parseError) {
+        console.error('Error processing nmap result object:', parseError);
+        console.error('Result object structure:', JSON.stringify(result, null, 2).substring(0, 1000));
+        res.status(500).send(`Error processing scan results: ${parseError.message}`);
+      }
     });
   });
 });
@@ -233,27 +258,52 @@ app.get('/devices/:id/history', rbac, (req, res) => {
 
 
 app.get('/metrics/json', rbac, async (req, res) => {
-  const cpuUsage = await new Promise((resolve) => {
-    os.cpuUsage(resolve);
-  });
+  try {
+    const [cpu, mem, network, netConns] = await Promise.all([
+      si.currentLoad(),
+      si.mem(),
+      si.networkStats(),
+      si.networkConnections()
+    ]);
 
-  const freeMem = os.freemem();
-  const totalMem = os.totalmem();
+    // Calculate free memory including buffers/cache for more "real" feel
+    // mem.available is often better than mem.free
+    const totalMemMB = mem.total / (1024 * 1024);
+    const freeMemMB = mem.available / (1024 * 1024);
 
-  // Return network monitoring data as JSON
-  res.json({
-    timestamp: new Date().toISOString(),
-    cpuUsage: cpuUsage,
-    freeMemory: freeMem,
-    totalMemory: totalMem,
-    networkStats: {
-      packetsReceived: Math.floor(Math.random() * 10000),
-      packetsSent: Math.floor(Math.random() * 10000),
-      bytesReceived: Math.floor(Math.random() * 1000000),
-      bytesSent: Math.floor(Math.random() * 1000000),
-      activeConnections: Math.floor(Math.random() * 100),
-    }
-  });
+    res.json({
+      timestamp: new Date().toISOString(),
+      cpuUsage: cpu.currentLoad / 100,
+      freeMemory: freeMemMB,
+      totalMemory: totalMemMB,
+      networkStats: {
+        packetsReceived: network[0]?.rx_sec || 0,
+        packetsSent: network[0]?.tx_sec || 0,
+        bytesReceived: network[0]?.rx_bytes || 0,
+        bytesSent: network[0]?.tx_bytes || 0,
+        activeConnections: netConns.length,
+      }
+    });
+  } catch (err) {
+    console.error('Failed to fetch system stats:', err);
+    // Fallback to simpler os-utils if si fails
+    const cpuUsage = await new Promise((resolve) => {
+      os.cpuUsage(resolve);
+    });
+    res.json({
+      timestamp: new Date().toISOString(),
+      cpuUsage: cpuUsage,
+      freeMemory: os.freemem(),
+      totalMemory: os.totalmem(),
+      networkStats: {
+        packetsReceived: 0,
+        packetsSent: 0,
+        bytesReceived: 0,
+        bytesSent: 0,
+        activeConnections: 0,
+      }
+    });
+  }
 });
 
 // Expose the metrics endpoint, now with RBAC

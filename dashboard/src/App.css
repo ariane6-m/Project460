@@ -896,3 +896,50 @@ body.dark-mode .dark-mode-toggle {
   color: #e0e0e0;
 }
 
+/* Quick Stats Styles */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
+}
+
+.stat-card {
+  padding: 20px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  text-align: center;
+  border: 1px solid #dee2e6;
+  transition: transform 0.2s ease;
+}
+
+.stat-card:hover {
+  transform: translateY(-2px);
+}
+
+.stat-value {
+  display: block;
+  font-size: 28px;
+  font-weight: bold;
+  color: #1976d2;
+  margin-top: 10px;
+}
+
+.stat-label {
+  color: #6c757d;
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+body.dark-mode .stat-card {
+  background-color: #1a1a1a;
+  border-color: #444;
+}
+
+body.dark-mode .stat-value {
+  color: #4a9eff;
+}
+
+body.dark-mode .stat-label {
+  color: #888;
+}
