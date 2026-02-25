@@ -13,6 +13,9 @@ RUN --mount=type=cache,target=/root/.npm \
 # Copy application source
 COPY . .
 
+ARG REACT_APP_API_URL
+ENV REACT_APP_API_URL=$REACT_APP_API_URL
+
 # Build the React application
 RUN npm run build
 

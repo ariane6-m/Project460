@@ -13,15 +13,37 @@ const xml2js = require('xml2js');
 const rateLimit = require('express-rate-limit');
 const fs = require('fs');
 const path = require('path');
-const { User, Device, ScanHistory, Alert, initDb, sequelize } = require('./src/models');
 
 const app = express();
 const port = 8080;
 
 const JWT_SECRET = 'your-secret-key'; // In a real app, use an environment variable
+const USERS_FILE = path.join(__dirname, 'users.json');
 
-// Initialize Database
-initDb();
+// Initialize users from file or with default admin
+let users = [];
+if (fs.existsSync(USERS_FILE)) {
+    try {
+        users = JSON.parse(fs.readFileSync(USERS_FILE, 'utf8'));
+    } catch (e) {
+        console.error('Failed to parse users file, starting fresh');
+    }
+}
+
+if (users.length === 0) {
+    users.push({ 
+        username: 'admin', 
+        passwordHash: bcrypt.hashSync('password', 10), 
+        role: 'Admin',
+        fullName: 'System Administrator',
+        email: 'admin@moto-moto.local'
+    });
+    fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2));
+}
+
+function saveUsers() {
+    fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2));
+}
 
 const scanRateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
@@ -74,62 +96,50 @@ app.post('/register', async (req, res) => {
         return res.status(400).send('All fields (username, password, fullName, email) are required.');
     }
 
-    try {
-        const existingUser = await User.findOne({ 
-            where: { 
-                [sequelize.Sequelize.Op.or]: [{ username }, { email }] 
-            } 
-        });
-
-        if (existingUser) {
-            return res.status(409).send('Username or email already exists.');
-        }
-
-        const passwordHash = await bcrypt.hash(password, 10);
-        await User.create({ 
-            username, 
-            passwordHash, 
-            role: 'Viewer',
-            fullName,
-            email
-        });
-        res.status(201).send('User registered successfully.');
-    } catch (err) {
-        console.error('Registration error:', err);
-        res.status(500).send('Error registering user.');
+    if (users.find(u => u.username === username)) {
+        return res.status(409).send('Username already exists.');
     }
+
+    if (users.find(u => u.email === email)) {
+        return res.status(409).send('Email already registered.');
+    }
+
+    const passwordHash = await bcrypt.hash(password, 10);
+    const newUser = { 
+        username, 
+        passwordHash, 
+        role: 'Viewer',
+        fullName,
+        email,
+        createdAt: new Date().toISOString()
+    };
+    users.push(newUser);
+    saveUsers();
+    res.status(201).send('User registered successfully.');
 });
 
 app.post('/login', async (req, res) => {
     const { username, password } = req.body;
     
-    try {
-        const user = await User.findOne({ where: { username } });
+    const user = users.find(u => u.username === username);
 
-        if (user && await bcrypt.compare(password, user.passwordHash)) {
-            const token = jwt.sign({ username, role: user.role }, JWT_SECRET, { expiresIn: '1h' });
-            res.json({ token });
-        } else {
-            res.status(401).send('Invalid credentials');
-        }
-    } catch (err) {
-        console.error('Login error:', err);
-        res.status(500).send('Error logging in.');
+    if (user && await bcrypt.compare(password, user.passwordHash)) {
+        const token = jwt.sign({ username, role: user.role }, JWT_SECRET, { expiresIn: '1h' });
+        res.json({ token });
+    } else {
+        res.status(401).send('Invalid credentials');
     }
 });
 
 // Admin - Get all users (Admin only)
-app.get('/admin/users', rbac, async (req, res) => {
-    try {
-        const users = await User.findAll({ attributes: ['username', 'role', 'fullName', 'email'] });
-        res.json(users);
-    } catch (err) {
-        res.status(500).send('Error fetching users.');
-    }
+app.get('/admin/users', rbac, (req, res) => {
+    // Only return username and role
+    const usersData = users.map(user => ({ username: user.username, role: user.role }));
+    res.json(usersData);
 });
 
 // Admin - Change user role (Admin only)
-app.put('/admin/users/:username/role', rbac, async (req, res) => {
+app.put('/admin/users/:username/role', rbac, (req, res) => {
     const { username } = req.params;
     const { role } = req.body;
 
@@ -137,18 +147,14 @@ app.put('/admin/users/:username/role', rbac, async (req, res) => {
         return res.status(400).send('Invalid role specified. Role must be Admin or Viewer.');
     }
 
-    try {
-        const user = await User.findOne({ where: { username } });
-        if (!user) {
-            return res.status(404).send('User not found.');
-        }
+    const userIndex = users.findIndex(u => u.username === username);
 
-        user.role = role;
-        await user.save();
-        res.send('User role updated successfully.');
-    } catch (err) {
-        res.status(500).send('Error updating user role.');
+    if (userIndex === -1) {
+        return res.status(404).send('User not found.');
     }
+
+    users[userIndex].role = role;
+    res.send('User role updated successfully.');
 });
 
 // Create a Registry to register the metrics
@@ -192,6 +198,8 @@ app.get('/hello', (req, res) => {
     res.send('Hello again!');
 });
 
+let devices = []; // In-memory storage for scanned devices
+
 app.post('/scan', scanRateLimiter, rbac, (req, res) => {
   const { target } = req.body;
 
@@ -199,35 +207,51 @@ app.post('/scan', scanRateLimiter, rbac, (req, res) => {
     return res.status(400).send('Target is required');
   }
 
+  // Basic allowlist: IPv4, IPv6, hostname, or CIDR-style characters only
   const safeTargetPattern = /^[A-Za-z0-9\.\-_:\/]+$/;
   if (!safeTargetPattern.test(target)) {
     return res.status(400).send('Invalid target format');
   }
 
+  // Use execFile to prevent command injection. 
+  // -T4 for faster timing, -F for fast port scan, -oX - for XML output to stdout
+  // Added -Pn to skip host discovery and treat all hosts as online
   const args = ['-T4', '-F', '-Pn', '-oX', '-', target];
+
   console.log(`Executing command: nmap ${args.join(' ')}`);
 
   execFile('nmap', args, { maxBuffer: 10 * 1024 * 1024 }, (error, stdout, stderr) => {
-    if (error && error.code !== 1) {
+    if (error) {
       console.error(`execFile error: ${error}`);
-      return res.status(500).send(`Error executing nmap: ${error.message}`);
+      // Nmap returns 1 if it didn't find any hosts, which isn't necessarily an error for us
+      if (error.code !== 1) {
+        return res.status(500).send(`Error executing nmap: ${error.message}`);
+      }
+    }
+    if (stderr) {
+      console.warn(`nmap stderr: ${stderr}`);
     }
 
-    xml2js.parseString(stdout, async (err, result) => {
+    console.log(`nmap stdout length: ${stdout.length}`);
+
+    xml2js.parseString(stdout, (err, result) => {
       if (err) {
         console.error(`xml2js parse error: ${err}`);
+        console.error(`Raw stdout (first 500 chars): ${stdout.substring(0, 500)}`);
         return res.status(500).send('Error parsing nmap output.');
       }
       
       if (!result || !result.nmaprun || !result.nmaprun.host) {
-        await ScanHistory.create({ target, deviceCount: 0, rawResults: result });
+        console.log('No hosts found in nmap output.');
+        devices = [];
         return res.json([]);
       }
 
       try {
         const hosts = Array.isArray(result.nmaprun.host) ? result.nmaprun.host : [result.nmaprun.host];
-        const scannedDevices = hosts.map(host => {
+        devices = hosts.map(host => {
           const addresses = Array.isArray(host.address) ? host.address : (host.address ? [host.address] : []);
+          
           const ip = addresses.find(a => a.$ && a.$.addrtype === 'ipv4')?.$.addr;
           const mac = addresses.find(a => a.$ && a.$.addrtype === 'mac')?.$.addr;
           const vendor = addresses.find(a => a.$ && a.$.addrtype === 'mac')?.$.vendor;
@@ -254,89 +278,43 @@ app.post('/scan', scanRateLimiter, rbac, (req, res) => {
             openPorts: openPorts,
           };
         });
-
-        // Save to History
-        await ScanHistory.create({ target, deviceCount: scannedDevices.length, rawResults: scannedDevices });
-
-        // Update/Create Devices and generate alerts
-        for (const dev of scannedDevices) {
-          const deviceIdentifier = (dev.mac && dev.mac !== 'Unknown') ? { mac: dev.mac } : { ip: dev.ip };
-          
-          const [device, created] = await Device.findOrCreate({
-            where: deviceIdentifier,
-            defaults: { ...dev, lastSeen: new Date() }
-          });
-
-          if (created) {
-            await Alert.create({
-              severity: 'Medium',
-              message: `New device detected: ${dev.ip} (${dev.hostname})`,
-              deviceId: device.id
-            });
-          } else {
-            await device.update({ ...dev, lastSeen: new Date() });
-          }
-        }
-
-        res.json(scannedDevices);
+        res.json(devices);
       } catch (parseError) {
-        console.error('Error processing nmap result:', parseError);
+        console.error('Error processing nmap result object:', parseError);
+        console.error('Result object structure:', JSON.stringify(result, null, 2).substring(0, 1000));
         res.status(500).send(`Error processing scan results: ${parseError.message}`);
       }
     });
   });
 });
 
-app.get('/devices', rbac, async (req, res) => {
-  try {
-    const devices = await Device.findAll({ order: [['lastSeen', 'DESC']] });
-    res.json(devices);
-  } catch (err) {
-    res.status(500).send('Error fetching devices.');
-  }
+app.get('/devices', rbac, (req, res) => {
+  res.json(devices);
 });
 
-app.get('/alerts', rbac, async (req, res) => {
-  try {
-    const alerts = await Alert.findAll({ 
-      where: { status: 'Active' },
-      order: [['createdAt', 'DESC']],
-      limit: 50
-    });
-    res.json(alerts);
-  } catch (err) {
-    res.status(500).send('Error fetching alerts.');
-  }
+app.get('/alerts', rbac, (req, res) => {
+  res.json([
+    { id: 1, severity: 'Critical', time: new Date(), message: 'Unauthorized access attempt detected from 192.168.1.101' },
+    { id: 2, severity: 'High', time: new Date(), message: 'Port scan detected from 10.0.0.5' },
+    { id: 3, severity: 'Medium', time: new Date(), message: 'Unusual network traffic from device 192.168.1.55' },
+  ]);
 });
 
 app.get('/events', rbac, (req, res) => {
   res.json(getEvents());
 });
 
-app.get('/devices/:id/history', rbac, async (req, res) => {
-  try {
-    const device = await Device.findByPk(req.params.id);
-    if (!device) return res.status(404).send('Device not found');
-
-    // For history, we'll return entries from ScanHistory where this device appeared
-    // This is a simplified implementation
-    const history = await ScanHistory.findAll({
-      order: [['createdAt', 'DESC']],
-      limit: 20
-    });
-
-    // Transform history to look like the mock data for the charts
-    const chartData = history.map(h => ({
-      timestamp: h.createdAt,
-      // We'll simulate some metrics based on device data for the chart
-      status: h.rawResults.find(d => d.mac === device.mac) ? 1 : 0,
-      portCount: h.rawResults.find(d => d.mac === device.mac)?.openPorts?.length || 0
-    }));
-
-    res.json(chartData);
-  } catch (err) {
-    res.status(500).send('Error fetching device history.');
-  }
+app.get('/devices/:id/history', rbac, (req, res) => {
+  // In a real app, you would fetch this from a database
+  res.json([
+    { "timestamp": "2026-02-15T00:00:00Z", "temperature": 22.5, "humidity": 45.2 },
+    { "timestamp": "2026-02-15T01:00:00Z", "temperature": 22.7, "humidity": 45.5 },
+    { "timestamp": "2026-02-15T02:00:00Z", "temperature": 22.8, "humidity": 45.8 },
+    { "timestamp": "2026-02-15T03:00:00Z", "temperature": 22.7, "humidity": 46.1 },
+    { "timestamp": "2026-02-15T04:00:00Z", "temperature": 22.6, "humidity": 46.0 },
+    { "timestamp": "2026-02-15T05:00:00Z", "temperature": 22.5, "humidity": 45.9 },
+    { "timestamp": "2026-02-15T06:00:00Z", "temperature": 22.4, "humidity": 45.7 },
+  ]);
 });
 
 
