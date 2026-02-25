@@ -45,30 +45,39 @@ const Alert = sequelize.define('Alert', {
 Device.hasMany(Alert);
 Alert.belongsTo(Device);
 
-const initDb = async () => {
-  try {
-    await sequelize.authenticate();
-    console.log('Database connection established successfully.');
-    
-    // Sync models (creates tables if they don't exist)
-    await sequelize.sync({ alter: true });
-    console.log('Database models synchronized.');
+const initDb = async (retries = 5) => {
+  while (retries) {
+    try {
+      await sequelize.authenticate();
+      console.log('Database connection established successfully.');
+      
+      // Sync models (creates tables if they don't exist)
+      await sequelize.sync({ alter: true });
+      console.log('Database models synchronized.');
 
-    // Create default admin if no users exist
-    const adminCount = await User.count({ where: { username: 'admin' } });
-    if (adminCount === 0) {
-      const bcrypt = require('bcryptjs');
-      await User.create({
-        username: 'admin',
-        passwordHash: bcrypt.hashSync('password', 10),
-        role: 'Admin',
-        fullName: 'System Administrator',
-        email: 'admin@moto-moto.local'
-      });
-      console.log('Default admin user created.');
+      // Create default admin if no users exist
+      const adminCount = await User.count({ where: { username: 'admin' } });
+      if (adminCount === 0) {
+        const bcrypt = require('bcryptjs');
+        await User.create({
+          username: 'admin',
+          passwordHash: bcrypt.hashSync('password', 10),
+          role: 'Admin',
+          fullName: 'System Administrator',
+          email: 'admin@moto-moto.local'
+        });
+        console.log('Default admin user created.');
+      }
+      break; // Success, exit retry loop
+    } catch (error) {
+      console.error(`Unable to connect to the database. Retries left: ${retries - 1}`, error.message);
+      retries -= 1;
+      // Wait for 5 seconds before retrying
+      await new Promise(resolve => setTimeout(resolve, 5000));
+      if (retries === 0) {
+        console.error('Failed to connect to the database after all retries.');
+      }
     }
-  } catch (error) {
-    console.error('Unable to connect to the database:', error);
   }
 };
 
