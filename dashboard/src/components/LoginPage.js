@@ -6,6 +6,8 @@ import './LoginPage.css';
 const LoginPage = () => {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
+    const [fullName, setFullName] = useState('');
+    const [email, setEmail] = useState('');
     const [isRegistering, setIsRegistering] = useState(false); // New state for toggling between login/register
     const [error, setError] = useState('');
     const navigate = useNavigate();
@@ -17,7 +19,7 @@ const LoginPage = () => {
         try {
             let response;
             if (isRegistering) {
-                response = await apiClient.post('/register', { username, password });
+                response = await apiClient.post('/register', { username, password, fullName, email });
                 // If registration is successful, automatically log in the user
                 if (response.status === 201) {
                   const loginResponse = await apiClient.post('/login', { username, password });
@@ -33,9 +35,11 @@ const LoginPage = () => {
             }
         } catch (err) {
             if (err.response && err.response.status === 409) {
-                setError('Username already exists.');
+                setError(err.response.data || 'Username or email already exists.');
             } else if (err.response && err.response.status === 401) {
                 setError('Invalid username or password.');
+            } else if (err.response && err.response.data) {
+                setError(err.response.data);
             } else {
                 setError('An unexpected error occurred.');
             }
@@ -45,8 +49,36 @@ const LoginPage = () => {
     return (
         <div className="login-container">
             <form onSubmit={handleAuth} className="login-form">
-                <h2>{isRegistering ? 'Register' : 'Login'}</h2>
+                <h2>{isRegistering ? 'Create Account' : 'Login'}</h2>
                 {error && <p className="error-message">{error}</p>}
+                
+                {isRegistering && (
+                    <>
+                        <div className="form-group">
+                            <label htmlFor="fullName">Full Name</label>
+                            <input
+                                id="fullName"
+                                type="text"
+                                value={fullName}
+                                onChange={(e) => setFullName(e.target.value)}
+                                placeholder="John Doe"
+                                required
+                            />
+                        </div>
+                        <div className="form-group">
+                            <label htmlFor="email">Email Address</label>
+                            <input
+                                id="email"
+                                type="email"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                placeholder="john@example.com"
+                                required
+                            />
+                        </div>
+                    </>
+                )}
+
                 <div className="form-group">
                     <label htmlFor="username">Username</label>
                     <input
@@ -71,7 +103,10 @@ const LoginPage = () => {
                 <button
                     type="button"
                     className="toggle-auth-mode"
-                    onClick={() => setIsRegistering(!isRegistering)}
+                    onClick={() => {
+                        setIsRegistering(!isRegistering);
+                        setError('');
+                    }}
                 >
                     {isRegistering ? 'Already have an account? Login' : 'Need an account? Register'}
                 </button>

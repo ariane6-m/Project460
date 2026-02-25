@@ -17,8 +17,14 @@ RUN apt-get update && apt-get install -y nmap && rm -rf /var/lib/apt/lists/*
 # Copy application source
 COPY . .
 
+# Install all dependencies again to ensure consistency
+RUN npm install --omit=dev
+
 # Ensure the node user owns the app directory
 RUN chown -R node:node /usr/src/app
+
+# Persistent volume for user data
+VOLUME /usr/src/app
 
 # Run as non-root user for security
 USER node

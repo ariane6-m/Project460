@@ -1,0 +1,9 @@
+[
+  {
+    "username": "admin",
+    "passwordHash": "$2a$10$iF4fUcMrEwwJjB2ML/auQOJTSO21uf1ORx54gsWkiIRhO4DIFjYaG",
+    "role": "Admin",
+    "fullName": "System Administrator",
+    "email": "admin@moto-moto.local"
+  }
+]

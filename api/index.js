@@ -11,11 +11,39 @@ const si = require('systeminformation');
 const { execFile } = require('child_process');
 const xml2js = require('xml2js');
 const rateLimit = require('express-rate-limit');
+const fs = require('fs');
+const path = require('path');
 
 const app = express();
 const port = 8080;
 
 const JWT_SECRET = 'your-secret-key'; // In a real app, use an environment variable
+const USERS_FILE = path.join(__dirname, 'users.json');
+
+// Initialize users from file or with default admin
+let users = [];
+if (fs.existsSync(USERS_FILE)) {
+    try {
+        users = JSON.parse(fs.readFileSync(USERS_FILE, 'utf8'));
+    } catch (e) {
+        console.error('Failed to parse users file, starting fresh');
+    }
+}
+
+if (users.length === 0) {
+    users.push({ 
+        username: 'admin', 
+        passwordHash: bcrypt.hashSync('password', 10), 
+        role: 'Admin',
+        fullName: 'System Administrator',
+        email: 'admin@moto-moto.local'
+    });
+    fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2));
+}
+
+function saveUsers() {
+    fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2));
+}
 
 const scanRateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
@@ -31,11 +59,6 @@ const authRateLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
 });
-
-// Temporary in-memory user store (replace with a database in a real application)
-const users = [
-  { username: 'admin', passwordHash: bcrypt.hashSync('password', 10), role: 'Admin' }
-];
 
 // Middleware to parse JSON bodies
 app.use(bodyParser.json());
@@ -67,19 +90,31 @@ app.use(auditMiddleware);
 
 // Registration endpoint
 app.post('/register', async (req, res) => {
-    const { username, password } = req.body;
+    const { username, password, fullName, email } = req.body;
 
-    if (!username || !password) {
-        return res.status(400).send('Username and password are required.');
+    if (!username || !password || !fullName || !email) {
+        return res.status(400).send('All fields (username, password, fullName, email) are required.');
     }
 
     if (users.find(u => u.username === username)) {
         return res.status(409).send('Username already exists.');
     }
 
+    if (users.find(u => u.email === email)) {
+        return res.status(409).send('Email already registered.');
+    }
+
     const passwordHash = await bcrypt.hash(password, 10);
-    const newUser = { username, passwordHash, role: 'Viewer' }; // New users are 'Viewer' by default
+    const newUser = { 
+        username, 
+        passwordHash, 
+        role: 'Viewer',
+        fullName,
+        email,
+        createdAt: new Date().toISOString()
+    };
     users.push(newUser);
+    saveUsers();
     res.status(201).send('User registered successfully.');
 });
 
