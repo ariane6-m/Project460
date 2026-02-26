@@ -40,7 +40,11 @@ const authRateLimiter = rateLimit({
 
 // Middleware to parse JSON bodies
 app.use(bodyParser.json());
-app.use(cors());
+app.use(cors({
+  origin: '*',
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
 
 // JWT authentication middleware
 app.use(authRateLimiter, (req, res, next) => {
