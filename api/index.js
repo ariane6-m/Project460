@@ -321,28 +321,28 @@ app.get('/devices/:id/history', rbac, async (req, res) => {
   try {
     const { id } = req.params;
     
-    // Find device by ID or by its identifier (IP/MAC)
+    // Safety check: Is it an integer ID or a string identifier (IP/MAC)?
+    const isInteger = !isNaN(parseInt(id)) && /^\d+$/.test(id);
+
     const device = await Device.findOne({
-      where: {
-        [sequelize.Sequelize.Op.or]: [
-          { id: isNaN(id) ? -1 : id },
-          { ip: id },
-          { mac: id }
-        ]
-      }
+      where: isInteger 
+        ? { [sequelize.Sequelize.Op.or]: [{ id: parseInt(id) }, { ip: id }, { mac: id }] }
+        : { [sequelize.Sequelize.Op.or]: [{ ip: id }, { mac: id }] }
     });
 
     if (!device) return res.status(404).send('Device not found');
 
-    // Fetch history where this device appeared
     const history = await ScanHistory.findAll({
       order: [['createdAt', 'DESC']],
       limit: 50
     });
 
-    // Transform history to look like the mock data for the charts
     const chartData = history.map(h => {
-      const deviceInScan = h.rawResults.find(d => d.mac === device.mac || d.ip === device.ip);
+      // Find this device in the raw scan results of each history entry
+      const deviceInScan = Array.isArray(h.rawResults) 
+        ? h.rawResults.find(d => d.mac === device.mac || d.ip === device.ip)
+        : null;
+
       return {
         timestamp: h.createdAt,
         status: deviceInScan ? 1 : 0,
