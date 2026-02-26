@@ -260,21 +260,21 @@ app.post('/scan', scanRateLimiter, rbac, (req, res) => {
 
         // Update/Create Devices and generate alerts
         for (const dev of scannedDevices) {
-          if (dev.mac && dev.mac !== 'Unknown') {
-            const [device, created] = await Device.findOrCreate({
-              where: { mac: dev.mac },
-              defaults: { ...dev, lastSeen: new Date() }
-            });
+          const deviceIdentifier = (dev.mac && dev.mac !== 'Unknown') ? { mac: dev.mac } : { ip: dev.ip };
+          
+          const [device, created] = await Device.findOrCreate({
+            where: deviceIdentifier,
+            defaults: { ...dev, lastSeen: new Date() }
+          });
 
-            if (created) {
-              await Alert.create({
-                severity: 'Medium',
-                message: `New device detected: ${dev.ip} (${dev.hostname})`,
-                deviceId: device.id
-              });
-            } else {
-              await device.update({ ...dev, lastSeen: new Date() });
-            }
+          if (created) {
+            await Alert.create({
+              severity: 'Medium',
+              message: `New device detected: ${dev.ip} (${dev.hostname})`,
+              deviceId: device.id
+            });
+          } else {
+            await device.update({ ...dev, lastSeen: new Date() });
           }
         }
 
