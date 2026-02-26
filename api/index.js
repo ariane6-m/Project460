@@ -319,26 +319,40 @@ app.get('/events', rbac, (req, res) => {
 
 app.get('/devices/:id/history', rbac, async (req, res) => {
   try {
-    const device = await Device.findByPk(req.params.id);
+    const { id } = req.params;
+    
+    // Find device by ID or by its identifier (IP/MAC)
+    const device = await Device.findOne({
+      where: {
+        [sequelize.Sequelize.Op.or]: [
+          { id: isNaN(id) ? -1 : id },
+          { ip: id },
+          { mac: id }
+        ]
+      }
+    });
+
     if (!device) return res.status(404).send('Device not found');
 
-    // For history, we'll return entries from ScanHistory where this device appeared
-    // This is a simplified implementation
+    // Fetch history where this device appeared
     const history = await ScanHistory.findAll({
       order: [['createdAt', 'DESC']],
-      limit: 20
+      limit: 50
     });
 
     // Transform history to look like the mock data for the charts
-    const chartData = history.map(h => ({
-      timestamp: h.createdAt,
-      // We'll simulate some metrics based on device data for the chart
-      status: h.rawResults.find(d => d.mac === device.mac) ? 1 : 0,
-      portCount: h.rawResults.find(d => d.mac === device.mac)?.openPorts?.length || 0
-    }));
+    const chartData = history.map(h => {
+      const deviceInScan = h.rawResults.find(d => d.mac === device.mac || d.ip === device.ip);
+      return {
+        timestamp: h.createdAt,
+        status: deviceInScan ? 1 : 0,
+        portCount: deviceInScan?.openPorts?.length || 0
+      };
+    }).sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
 
     res.json(chartData);
   } catch (err) {
+    console.error('Error fetching history:', err);
     res.status(500).send('Error fetching device history.');
   }
 });

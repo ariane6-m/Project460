@@ -171,7 +171,7 @@ const DeviceHistory = () => {
                     ) : (
                         devices.map(device => (
                             <option key={device.ip} value={device.ip}>
-                                {device.hostname || device.ip}
+                                {device.hostname !== 'Unknown' ? device.hostname : device.ip}
                             </option>
                         ))
                     )}
