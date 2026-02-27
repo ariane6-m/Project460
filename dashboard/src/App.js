@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Sidebar from './components/Sidebar'; // Import Sidebar
 import Scanning from './components/Scanning';
@@ -61,13 +61,13 @@ const Dashboard = () => {
         <div className="dashboard-card">
           <h3>🔍 Network Scanning</h3>
           <p>Discover and monitor devices on your network. Filter by device type, manufacturer, and IP range to find exactly what you're looking for.</p>
-          <a href="/scanning" className="dashboard-link">Go to Scanning →</a>
+          <Link to="/scanning" className="dashboard-link">Go to Scanning →</Link>
         </div>
 
         <div className="dashboard-card">
           <h3>⚙️ Settings</h3>
           <p>Customize how your security tools work. Configure scan frequency, alert sensitivity, and data retention settings.</p>
-          <a href="/settings" className="dashboard-link">Go to Settings →</a>
+          <Link to="/settings" className="dashboard-link">Go to Settings →</Link>
         </div>
       </div>
 
