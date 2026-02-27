@@ -2,6 +2,24 @@
   padding: 20px;
 }
 
+.server-info-badge {
+  display: inline-block;
+  background-color: #e3f2fd;
+  color: #1976d2;
+  padding: 4px 12px;
+  border-radius: 16px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-bottom: 15px;
+  border: 1px solid #bbdefb;
+}
+
+.dark-mode .server-info-badge {
+  background-color: #0d47a1;
+  color: #e3f2fd;
+  border-color: #1565c0;
+}
+
 .metrics-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));

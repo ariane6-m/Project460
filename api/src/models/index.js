@@ -21,27 +21,39 @@ const User = sequelize.define('User', {
 
 const Device = sequelize.define('Device', {
   ip: { type: DataTypes.STRING },
-  mac: { type: DataTypes.STRING, unique: true },
+  mac: { type: DataTypes.STRING },
   hostname: { type: DataTypes.STRING },
   vendor: { type: DataTypes.STRING },
   lastSeen: { type: DataTypes.DATE },
-  status: { type: DataTypes.STRING }
+  status: { type: DataTypes.STRING },
+  userId: { type: DataTypes.INTEGER, allowNull: false }
 });
 
 const ScanHistory = sequelize.define('ScanHistory', {
   target: { type: DataTypes.STRING },
   deviceCount: { type: DataTypes.INTEGER },
-  rawResults: { type: DataTypes.JSONB }
+  rawResults: { type: DataTypes.JSONB },
+  userId: { type: DataTypes.INTEGER, allowNull: false }
 });
 
 const Alert = sequelize.define('Alert', {
   severity: { type: DataTypes.STRING }, // Critical, High, Medium, Low
   message: { type: DataTypes.TEXT },
   status: { type: DataTypes.STRING, defaultValue: 'Active' }, // Active, Dismissed
-  deviceId: { type: DataTypes.INTEGER }
+  deviceId: { type: DataTypes.INTEGER },
+  userId: { type: DataTypes.INTEGER, allowNull: false }
 });
 
 // Relationships
+User.hasMany(Device);
+Device.belongsTo(User);
+
+User.hasMany(ScanHistory);
+ScanHistory.belongsTo(User);
+
+User.hasMany(Alert);
+Alert.belongsTo(User);
+
 Device.hasMany(Alert);
 Alert.belongsTo(Device);
 

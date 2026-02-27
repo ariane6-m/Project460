@@ -111,7 +111,7 @@ app.post('/login', async (req, res) => {
         const user = await User.findOne({ where: { username } });
 
         if (user && await bcrypt.compare(password, user.passwordHash)) {
-            const token = jwt.sign({ username, role: user.role }, JWT_SECRET, { expiresIn: '1h' });
+            const token = jwt.sign({ id: user.id, username, role: user.role }, JWT_SECRET, { expiresIn: '1h' });
             res.json({ token });
         } else {
             res.status(401).send('Invalid credentials');
@@ -224,7 +224,7 @@ app.post('/scan', scanRateLimiter, rbac, (req, res) => {
       }
       
       if (!result || !result.nmaprun || !result.nmaprun.host) {
-        await ScanHistory.create({ target, deviceCount: 0, rawResults: result });
+        await ScanHistory.create({ target, deviceCount: 0, rawResults: result, userId: req.user.id });
         return res.json([]);
       }
 
@@ -260,22 +260,23 @@ app.post('/scan', scanRateLimiter, rbac, (req, res) => {
         });
 
         // Save to History
-        await ScanHistory.create({ target, deviceCount: scannedDevices.length, rawResults: scannedDevices });
+        await ScanHistory.create({ target, deviceCount: scannedDevices.length, rawResults: scannedDevices, userId: req.user.id });
 
         // Update/Create Devices and generate alerts
         for (const dev of scannedDevices) {
-          const deviceIdentifier = (dev.mac && dev.mac !== 'Unknown') ? { mac: dev.mac } : { ip: dev.ip };
+          const deviceIdentifier = (dev.mac && dev.mac !== 'Unknown') ? { mac: dev.mac, userId: req.user.id } : { ip: dev.ip, userId: req.user.id };
           
           const [device, created] = await Device.findOrCreate({
             where: deviceIdentifier,
-            defaults: { ...dev, lastSeen: new Date() }
+            defaults: { ...dev, lastSeen: new Date(), userId: req.user.id }
           });
 
           if (created) {
             await Alert.create({
               severity: 'Medium',
               message: `New device detected: ${dev.ip} (${dev.hostname})`,
-              deviceId: device.id
+              deviceId: device.id,
+              userId: req.user.id
             });
           } else {
             await device.update({ ...dev, lastSeen: new Date() });
@@ -293,7 +294,10 @@ app.post('/scan', scanRateLimiter, rbac, (req, res) => {
 
 app.get('/devices', rbac, async (req, res) => {
   try {
-    const devices = await Device.findAll({ order: [['lastSeen', 'DESC']] });
+    const devices = await Device.findAll({ 
+      where: { userId: req.user.id },
+      order: [['lastSeen', 'DESC']] 
+    });
     res.json(devices);
   } catch (err) {
     res.status(500).send('Error fetching devices.');
@@ -303,7 +307,7 @@ app.get('/devices', rbac, async (req, res) => {
 app.get('/alerts', rbac, async (req, res) => {
   try {
     const alerts = await Alert.findAll({ 
-      where: { status: 'Active' },
+      where: { status: 'Active', userId: req.user.id },
       order: [['createdAt', 'DESC']],
       limit: 50
     });
@@ -326,13 +330,14 @@ app.get('/devices/:id/history', rbac, async (req, res) => {
 
     const device = await Device.findOne({
       where: isInteger 
-        ? { [sequelize.Sequelize.Op.or]: [{ id: parseInt(id) }, { ip: id }, { mac: id }] }
-        : { [sequelize.Sequelize.Op.or]: [{ ip: id }, { mac: id }] }
+        ? { [sequelize.Sequelize.Op.or]: [{ id: parseInt(id) }, { ip: id }, { mac: id }], userId: req.user.id }
+        : { [sequelize.Sequelize.Op.or]: [{ ip: id }, { mac: id }], userId: req.user.id }
     });
 
     if (!device) return res.status(404).send('Device not found');
 
     const history = await ScanHistory.findAll({
+      where: { userId: req.user.id },
       order: [['createdAt', 'DESC']],
       limit: 50
     });
@@ -357,6 +362,63 @@ app.get('/devices/:id/history', rbac, async (req, res) => {
   }
 });
 
+
+// Store latest agent metrics in memory (or you could add a DB model for this)
+let agentMetrics = {};
+
+app.post('/agent/report', rbac, async (req, res) => {
+  const { metrics, scanResults, target } = req.body;
+  const userId = req.user.id;
+
+  try {
+    // 1. Store the metrics for the dashboard to display
+    agentMetrics[userId] = {
+      ...metrics,
+      timestamp: new Date().toISOString()
+    };
+
+    // 2. If scan results were included, save them to the DB
+    if (scanResults && Array.isArray(scanResults)) {
+      await ScanHistory.create({ 
+        target: target || 'Local Agent Scan', 
+        deviceCount: scanResults.length, 
+        rawResults: scanResults,
+        userId: userId
+      });
+
+      // Update/Create Devices
+      for (const dev of scanResults) {
+        const deviceIdentifier = (dev.mac && dev.mac !== 'Unknown') ? { mac: dev.mac, userId } : { ip: dev.ip, userId };
+        const [device, created] = await Device.findOrCreate({
+          where: deviceIdentifier,
+          defaults: { ...dev, lastSeen: new Date(), userId }
+        });
+
+        if (created) {
+          await Alert.create({
+            severity: 'Medium',
+            message: `[Agent] New device: ${dev.ip}`,
+            deviceId: device.id,
+            userId
+          });
+        } else {
+          await device.update({ ...dev, lastSeen: new Date() });
+        }
+      }
+    }
+
+    res.json({ message: 'Report received successfully' });
+  } catch (err) {
+    console.error('Agent report error:', err);
+    res.status(500).send('Error processing agent report');
+  }
+});
+
+app.get('/metrics/agent', rbac, (req, res) => {
+  const metrics = agentMetrics[req.user.id];
+  if (!metrics) return res.status(404).send('No agent data found');
+  res.json(metrics);
+});
 
 app.get('/metrics/json', rbac, async (req, res) => {
   try {

@@ -73,6 +73,7 @@ const Dashboard = () => {
 
       <div className="dashboard-stats">
         <h2>Quick Stats</h2>
+        <div className="server-info-badge">Monitoring Server (GCP VM)</div>
         {stats.loading ? (
           <p className="stat-placeholder">Loading stats...</p>
         ) : (
