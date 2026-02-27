@@ -29,6 +29,9 @@ let pendingAgentScans = {};
 
 // Agent Report Endpoint - Place ABOVE rate limiters to avoid blocking local agent
 app.post('/agent/report', rbac, async (req, res) => {
+  if (!req.body) {
+    return res.status(400).send('Request body is required');
+  }
   const { metrics, scanResults, target } = req.body;
   const userId = req.user.id;
 
