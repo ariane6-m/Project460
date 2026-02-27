@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { jwtDecode } from 'jwt-decode'; // Import jwtDecode
+import { jwtDecode } from 'jwt-decode';
 import './Sidebar.css';
 
 const Sidebar = ({ isOpen, toggleSidebar }) => {

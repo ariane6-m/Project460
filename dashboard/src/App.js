@@ -158,16 +158,16 @@ function App() {
             <ProtectedRoute>
               <MainLayout darkMode={darkMode} toggleDarkMode={toggleDarkMode}>
                 <Routes>
-                  <Route index element={<Dashboard />} />
-                  <Route path="scanning" element={<Scanning />} />
-                  <Route path="settings" element={<Settings darkMode={darkMode} onDarkModeChange={toggleDarkMode} />} />
-                  <Route path="metrics" element={<Metrics />} />
-                  <Route path="graphs" element={<Graphs />} />
-                  <Route path="devices" element={<Devices />} />
-                  <Route path="alerts" element={<Alerts />} />
-                  <Route path="timeline" element={<Timeline />} />
-                  <Route path="device-history" element={<DeviceHistory />} />
-                  <Route path="admin" element={<AdminPanel />} />
+                  <Route path="/" element={<Dashboard />} />
+                  <Route path="/scanning" element={<Scanning />} />
+                  <Route path="/settings" element={<Settings darkMode={darkMode} onDarkModeChange={toggleDarkMode} />} />
+                  <Route path="/metrics" element={<Metrics />} />
+                  <Route path="/graphs" element={<Graphs />} />
+                  <Route path="/devices" element={<Devices />} />
+                  <Route path="/alerts" element={<Alerts />} />
+                  <Route path="/timeline" element={<Timeline />} />
+                  <Route path="/device-history" element={<DeviceHistory />} />
+                  <Route path="/admin" element={<AdminPanel />} />
                 </Routes>
               </MainLayout>
             </ProtectedRoute>
