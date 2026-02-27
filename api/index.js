@@ -82,21 +82,6 @@ app.post('/agent/report', rbac, async (req, res) => {
   }
 });
 
-const scanRateLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 10, // limit each IP to 10 scan requests per windowMs
-  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
-  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
-});
-
-// Rate limiter for authorization/JWT verification
-const authRateLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 300, // limit each IP to 300 authenticated requests per windowMs
-  standardHeaders: true,
-  legacyHeaders: false,
-});
-
 // Middleware to parse JSON bodies
 app.use(bodyParser.json());
 app.use(cors({
@@ -106,7 +91,7 @@ app.use(cors({
 }));
 
 // JWT authentication middleware
-app.use(authRateLimiter, (req, res, next) => {
+app.use((req, res, next) => {
   if (req.path === '/login' || req.path === '/register') { // Allow /register without token
     return next();
   }
@@ -129,7 +114,7 @@ app.use(authRateLimiter, (req, res, next) => {
 // Audit logger middleware
 app.use(auditMiddleware);
 
-// Agent Report Endpoint - Place ABOVE rate limiters to avoid blocking local agent
+// Agent Report Endpoint
 app.post('/agent/report', rbac, async (req, res) => {
   const { metrics, scanResults, target } = req.body;
   const userId = req.user.id;
@@ -309,7 +294,7 @@ app.get('/hello', (req, res) => {
     res.send('Hello again!');
 });
 
-app.post('/scan', scanRateLimiter, rbac, (req, res) => {
+app.post('/scan', rbac, (req, res) => {
   const { target } = req.body;
 
   if (!target) {
@@ -479,6 +464,15 @@ app.get('/metrics/agent', rbac, (req, res) => {
   const metrics = agentMetrics[req.user.id];
   if (!metrics) return res.status(404).send('No agent data found');
   res.json(metrics);
+});
+
+// Endpoint for Dashboard to trigger an agent scan
+app.post('/agent/scan', rbac, (req, res) => {
+  const { target } = req.body;
+  if (!target) return res.status(400).send('Target is required');
+  
+  pendingAgentScans[req.user.id] = target;
+  res.json({ message: 'Scan request queued for agent' });
 });
 
 app.get('/metrics/json', rbac, async (req, res) => {
