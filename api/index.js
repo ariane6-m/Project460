@@ -27,10 +27,18 @@ initDb();
 let agentMetrics = {};
 let pendingAgentScans = {};
 
+// Middleware to parse JSON bodies
+app.use(bodyParser.json());
+app.use(cors({
+  origin: '*',
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
 // Agent Report Endpoint - Place ABOVE rate limiters to avoid blocking local agent
 app.post('/agent/report', rbac, async (req, res) => {
-  if (!req.body) {
-    return res.status(400).send('Request body is required');
+  if (!req.body || Object.keys(req.body).length === 0) {
+    return res.status(400).send('Request body is required and must not be empty');
   }
   const { metrics, scanResults, target } = req.body;
   const userId = req.user.id;
@@ -84,14 +92,6 @@ app.post('/agent/report', rbac, async (req, res) => {
     res.status(500).send('Error processing agent report');
   }
 });
-
-// Middleware to parse JSON bodies
-app.use(bodyParser.json());
-app.use(cors({
-  origin: '*',
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
-}));
 
 // JWT authentication middleware
 app.use((req, res, next) => {
