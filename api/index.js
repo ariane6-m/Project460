@@ -125,31 +125,6 @@ app.post('/agent/report', rbac, async (req, res) => {
 
 // Registration endpoint
 app.post('/register', async (req, res) => {
-            message: `[Agent] New device: ${dev.ip}`,
-            deviceId: device.id,
-            userId
-          });
-        } else {
-          await device.update({ ...dev, lastSeen: new Date() });
-        }
-      }
-    }
-
-    const pendingScan = pendingAgentScans[userId];
-    delete pendingAgentScans[userId]; 
-
-    res.json({ 
-      message: 'Report received successfully',
-      pendingScan: pendingScan || null
-    });
-  } catch (err) {
-    console.error('Agent report error:', err);
-    res.status(500).send('Error processing agent report');
-  }
-});
-
-// Registration endpoint
-app.post('/register', async (req, res) => {
     const { username, password, fullName, email } = req.body;
 
     if (!username || !password || !fullName || !email) {
