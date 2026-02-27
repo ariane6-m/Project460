@@ -3,14 +3,45 @@ const DailyRotateFile = require('winston-daily-rotate-file');
 const fs = require('fs');
 const path = require('path');
 
-const logDir = 'logs'; // directory path for logs
+const logDir = path.join(process.cwd(), 'logs');
 
-// Create the log directory if it doesn't exist
-if (!fs.existsSync(logDir)) {
-  fs.mkdirSync(logDir);
+// Create the log directory if it doesn't exist, handling permission errors
+try {
+  if (!fs.existsSync(logDir)) {
+    fs.mkdirSync(logDir, { recursive: true });
+  }
+} catch (err) {
+  console.warn(`Warning: Could not create log directory at ${logDir}. Falling back to console-only logging.`, err.message);
 }
 
 // Configure Winston loggers
+const transports = [
+  new winston.transports.Console({
+    format: winston.format.combine(
+      winston.format.colorize(),
+      winston.format.simple()
+    )
+  })
+];
+
+// Only add file transport if the directory is writable
+try {
+  if (fs.existsSync(logDir)) {
+    transports.push(
+      new DailyRotateFile({
+        level: 'info',
+        filename: path.join(logDir, 'audit-%DATE%.log'),
+        datePattern: 'YYYY-MM-DD',
+        zippedArchive: true,
+        maxSize: '20m',
+        maxFiles: '14d'
+      })
+    );
+  }
+} catch (err) {
+  console.error('Failed to initialize file logging:', err.message);
+}
+
 const auditLogger = winston.createLogger({
   level: 'info',
   format: winston.format.combine(
@@ -21,22 +52,7 @@ const auditLogger = winston.createLogger({
     winston.format.splat(),
     winston.format.json()
   ),
-  transports: [
-    new winston.transports.Console({
-      format: winston.format.combine(
-        winston.format.colorize(),
-        winston.format.simple()
-      )
-    }),
-    new DailyRotateFile({
-      level: 'info',
-      filename: path.join(logDir, 'audit-%DATE%.log'),
-      datePattern: 'YYYY-MM-DD',
-      zippedArchive: true,
-      maxSize: '20m',
-      maxFiles: '14d'
-    })
-  ]
+  transports: transports
 });
 
 const MAX_EVENTS = 100;
