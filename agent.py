@@ -116,6 +116,12 @@ class MotoAgent:
         print("=== Moto-Moto Local Agent (V2.1) Started ===")
         print(f"Target Server: {API_URL}")
         while True:
+            if not self.token:
+                if self.login():
+                    time.sleep(5) # Short delay after login
+                else:
+                    time.sleep(10)
+                    continue
             self.report()
             time.sleep(REPORT_INTERVAL)
 

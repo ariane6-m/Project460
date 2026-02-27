@@ -64,6 +64,12 @@ app.post('/agent/report', rbac, async (req, res) => {
   if (!req.body || Object.keys(req.body).length === 0) {
     return res.status(400).send('Request body is required and must not be empty');
   }
+
+  if (!req.user || !req.user.id) {
+    console.error('Agent report failed: Missing user in request context');
+    return res.status(401).send('Unauthorized: User context missing');
+  }
+
   const { metrics, scanResults, target } = req.body;
   const userId = req.user.id;
 
