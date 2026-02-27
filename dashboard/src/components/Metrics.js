@@ -45,7 +45,7 @@ const Metrics = () => {
           </button>
           <button 
             className={useAgent ? 'active' : ''} 
-            onClick={() => setUseAgent(True)}
+            onClick={() => setUseAgent(true)}
           >
             Local Computer (Agent)
           </button>
