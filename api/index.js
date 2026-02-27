@@ -23,6 +23,65 @@ const JWT_SECRET = 'your-secret-key'; // In a real app, use an environment varia
 // Initialize Database
 initDb();
 
+// Store latest agent metrics and pending scan requests
+let agentMetrics = {};
+let pendingAgentScans = {};
+
+// Agent Report Endpoint - Place ABOVE rate limiters to avoid blocking local agent
+app.post('/agent/report', rbac, async (req, res) => {
+  const { metrics, scanResults, target } = req.body;
+  const userId = req.user.id;
+
+  try {
+    if (metrics) {
+      agentMetrics[userId] = {
+        ...metrics,
+        timestamp: new Date().toISOString()
+      };
+    }
+
+    if (scanResults && Array.isArray(scanResults)) {
+      await ScanHistory.create({ 
+        target: target || 'Local Agent Scan', 
+        deviceCount: scanResults.length, 
+        rawResults: scanResults,
+        userId: userId
+      });
+
+      for (const dev of scanResults) {
+        const deviceIdentifier = (dev.mac && dev.mac !== 'Unknown') ? { mac: dev.mac, userId: req.user.id } : { ip: dev.ip, userId: req.user.id };
+        
+        const [device, created] = await Device.findOrCreate({
+          where: deviceIdentifier,
+          defaults: { ...dev, lastSeen: new Date(), userId: req.user.id }
+        });
+
+        if (created) {
+          await Alert.create({
+            severity: 'Medium',
+            message: `[Agent] New device detected: ${dev.ip} (${dev.hostname})`,
+            deviceId: device.id,
+            userId: req.user.id
+          });
+        } else {
+          await device.update({ ...dev, lastSeen: new Date() });
+        }
+      }
+    }
+
+    const pendingScan = pendingAgentScans[userId];
+    delete pendingAgentScans[userId]; 
+
+    res.json({ 
+      message: 'Report received successfully',
+      pendingScan: pendingScan || null
+    });
+  } catch (err) {
+    console.error('Agent report error:', err);
+    res.status(500).send('Error processing agent report');
+  }
+});
+
 const scanRateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 10, // limit each IP to 10 scan requests per windowMs
@@ -69,6 +128,64 @@ app.use(authRateLimiter, (req, res, next) => {
 
 // Audit logger middleware
 app.use(auditMiddleware);
+
+// Store latest agent metrics and pending scan requests
+let agentMetrics = {};
+let pendingAgentScans = {};
+
+// Agent Report Endpoint - Place ABOVE rate limiters to avoid blocking local agent
+app.post('/agent/report', rbac, async (req, res) => {
+  const { metrics, scanResults, target } = req.body;
+  const userId = req.user.id;
+
+  try {
+    if (metrics) {
+      agentMetrics[userId] = {
+        ...metrics,
+        timestamp: new Date().toISOString()
+      };
+    }
+
+    if (scanResults && Array.isArray(scanResults)) {
+      await ScanHistory.create({ 
+        target: target || 'Local Agent Scan', 
+        deviceCount: scanResults.length, 
+        rawResults: scanResults,
+        userId: userId
+      });
+
+      for (const dev of scanResults) {
+        const deviceIdentifier = (dev.mac && dev.mac !== 'Unknown') ? { mac: dev.mac, userId } : { ip: dev.ip, userId };
+        const [device, created] = await Device.findOrCreate({
+          where: deviceIdentifier,
+          defaults: { ...dev, lastSeen: new Date(), userId }
+        });
+
+        if (created) {
+          await Alert.create({
+            severity: 'Medium',
+            message: `[Agent] New device: ${dev.ip}`,
+            deviceId: device.id,
+            userId
+          });
+        } else {
+          await device.update({ ...dev, lastSeen: new Date() });
+        }
+      }
+    }
+
+    const pendingScan = pendingAgentScans[userId];
+    delete pendingAgentScans[userId]; 
+
+    res.json({ 
+      message: 'Report received successfully',
+      pendingScan: pendingScan || null
+    });
+  } catch (err) {
+    console.error('Agent report error:', err);
+    res.status(500).send('Error processing agent report');
+  }
+});
 
 // Registration endpoint
 app.post('/register', async (req, res) => {
@@ -360,76 +477,6 @@ app.get('/devices/:id/history', rbac, async (req, res) => {
     console.error('Error fetching history:', err);
     res.status(500).send('Error fetching device history.');
   }
-});
-
-
-// Store latest agent metrics and pending scan requests
-let agentMetrics = {};
-let pendingAgentScans = {};
-
-app.post('/agent/report', rbac, async (req, res) => {
-  const { metrics, scanResults, target } = req.body;
-  const userId = req.user.id;
-
-  try {
-    if (metrics) {
-      agentMetrics[userId] = {
-        ...metrics,
-        timestamp: new Date().toISOString()
-      };
-    }
-
-    // 2. If scan results were included, save them to the DB
-    if (scanResults && Array.isArray(scanResults)) {
-      await ScanHistory.create({ 
-        target: target || 'Local Agent Scan', 
-        deviceCount: scanResults.length, 
-        rawResults: scanResults,
-        userId: userId
-      });
-
-      // Update/Create Devices
-      for (const dev of scanResults) {
-        const deviceIdentifier = (dev.mac && dev.mac !== 'Unknown') ? { mac: dev.mac, userId } : { ip: dev.ip, userId };
-        const [device, created] = await Device.findOrCreate({
-          where: deviceIdentifier,
-          defaults: { ...dev, lastSeen: new Date(), userId }
-        });
-
-        if (created) {
-          await Alert.create({
-            severity: 'Medium',
-            message: `[Agent] New device: ${dev.ip}`,
-            deviceId: device.id,
-            userId
-          });
-        } else {
-          await device.update({ ...dev, lastSeen: new Date() });
-        }
-      }
-    }
-
-    // 3. Check for pending scans for this user
-    const pendingScan = pendingAgentScans[userId];
-    delete pendingAgentScans[userId]; // Clear it after sending
-
-    res.json({ 
-      message: 'Report received successfully',
-      pendingScan: pendingScan || null
-    });
-  } catch (err) {
-    console.error('Agent report error:', err);
-    res.status(500).send('Error processing agent report');
-  }
-});
-
-// Endpoint for Dashboard to trigger an agent scan
-app.post('/agent/scan', rbac, (req, res) => {
-  const { target } = req.body;
-  if (!target) return res.status(400).send('Target is required');
-  
-  pendingAgentScans[req.user.id] = target;
-  res.json({ message: 'Scan request queued for agent' });
 });
 
 app.get('/metrics/agent', rbac, (req, res) => {
