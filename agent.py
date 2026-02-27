@@ -28,44 +28,43 @@ class MotoAgent:
                 print("[+] Login successful!")
                 return True
             else:
-                print(f"[-] Login failed: {res.text}")
+                print(f"[-] Login failed: {res.status_code} - {res.text}")
                 return False
         except Exception as e:
-            print(f"[-] Connection error: {e}")
+            print(f"[-] Connection error during login: {e}")
             return False
 
     def get_system_metrics(self):
-        mem = psutil.virtual_memory()
-        cpu_usage = psutil.cpu_percent(interval=1) / 100.0
-        
-        return {
-            "cpuUsage": cpu_usage,
-            "freeMemory": mem.available / (1024 * 1024),
-            "totalMemory": mem.total / (1024 * 1024),
-            "hostname": socket.gethostname(),
-            "platform": platform.system(),
-            "isAgent": True
-        }
+        try:
+            mem = psutil.virtual_memory()
+            cpu_usage = psutil.cpu_percent(interval=1) / 100.0
+            
+            return {
+                "cpuUsage": cpu_usage,
+                "freeMemory": mem.available / (1024 * 1024),
+                "totalMemory": mem.total / (1024 * 1024),
+                "hostname": socket.gethostname(),
+                "platform": platform.system(),
+                "isAgent": True
+            }
+        except Exception as e:
+            print(f"[-] Error collecting metrics: {e}")
+            return None
 
     def run_local_scan(self, target):
         print(f"[*] Starting local network scan on {target}...")
-        # Note: This requires 'nmap' to be installed on your 1TB computer
         try:
-            # -F for fast scan, -sn for ping scan (faster), -oX - for XML output
             cmd = ["nmap", "-sn", "-oX", "-", target]
-            result = subprocess.run(cmd, capture_output=True, text=True)
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
             
             if result.returncode != 0:
                 print(f"[-] Nmap error: {result.stderr}")
                 return None
 
-            # We'll use a simple parser or just send the raw results if needed
-            # For simplicity, we'll just report that we found devices for now
-            # In a real app, we'd parse the XML like we do in the API
-            print(f"[+] Scan complete. Sending results back to server.")
-            return [] # In a real implementation, parse XML to list of dicts
+            print(f"[+] Scan complete. Results collected.")
+            return [] # Logic to parse XML could go here
         except FileNotFoundError:
-            print("[-] Error: 'nmap' not found on this computer. Please install it.")
+            print("[-] Error: 'nmap' not found. Please install it.")
             return None
         except Exception as e:
             print(f"[-] Scan failed: {e}")
@@ -76,8 +75,9 @@ class MotoAgent:
             if not self.login(): return
 
         metrics = self.get_system_metrics()
+        if not metrics: return
+
         headers = {"Authorization": f"Bearer {self.token}"}
-        
         payload = {"metrics": metrics}
         if scan_results is not None:
             payload["scanResults"] = scan_results
@@ -88,28 +88,32 @@ class MotoAgent:
                 f"{API_URL}/agent/report", 
                 json=payload, 
                 headers=headers,
-                timeout=15
+                timeout=20 # Increased timeout
             )
             if res.status_code == 200:
                 data = res.json()
                 print(f"[OK] Reported Stats. RAM Free: {metrics['freeMemory']:.0f}MB")
                 
-                # Check if server wants us to run a scan
                 pending_target = data.get("pendingScan")
                 if pending_target:
                     results = self.run_local_scan(pending_target)
                     if results is not None:
-                        # Immediately report scan results back
                         self.report(scan_results=results, scan_target=pending_target)
 
             elif res.status_code == 401:
                 print("[!] Token expired, re-logging...")
                 self.token = None
+            else:
+                print(f"[-] Report failed with status {res.status_code}: {res.text}")
+        except requests.exceptions.Timeout:
+            print("[-] Report failed: Connection timed out.")
+        except requests.exceptions.ConnectionError as e:
+            print(f"[-] Report failed: Connection refused or host unreachable. ({e})")
         except Exception as e:
             print(f"[-] Report failed: {e}")
 
     def run(self):
-        print("=== Moto-Moto Local Agent (V2) Started ===")
+        print("=== Moto-Moto Local Agent (V2.1) Started ===")
         print(f"Target Server: {API_URL}")
         while True:
             self.report()

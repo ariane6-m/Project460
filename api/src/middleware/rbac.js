@@ -1,6 +1,10 @@
 function rbac(req, res, next) {
-  // Allow all authenticated users to access metrics endpoints
-  if (req.path === '/metrics' || req.path === '/metrics/json' || req.path === '/scan') {
+  // Allow all authenticated users to access metrics and agent endpoints
+  if (req.path === '/metrics' || 
+      req.path === '/metrics/json' || 
+      req.path === '/scan' || 
+      req.path === '/agent/report' || 
+      req.path === '/agent/scan') {
     return next();
   }
 
