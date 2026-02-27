@@ -129,10 +129,6 @@ app.use(authRateLimiter, (req, res, next) => {
 // Audit logger middleware
 app.use(auditMiddleware);
 
-// Store latest agent metrics and pending scan requests
-let agentMetrics = {};
-let pendingAgentScans = {};
-
 // Agent Report Endpoint - Place ABOVE rate limiters to avoid blocking local agent
 app.post('/agent/report', rbac, async (req, res) => {
   const { metrics, scanResults, target } = req.body;
