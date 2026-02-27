@@ -26,14 +26,14 @@ const Device = sequelize.define('Device', {
   vendor: { type: DataTypes.STRING },
   lastSeen: { type: DataTypes.DATE },
   status: { type: DataTypes.STRING },
-  userId: { type: DataTypes.INTEGER, allowNull: true } // Allow null temporarily
+  userId: { type: DataTypes.INTEGER, allowNull: false } // Mandatory
 });
 
 const ScanHistory = sequelize.define('ScanHistory', {
   target: { type: DataTypes.STRING },
   deviceCount: { type: DataTypes.INTEGER },
   rawResults: { type: DataTypes.JSONB },
-  userId: { type: DataTypes.INTEGER, allowNull: true } // Allow null temporarily
+  userId: { type: DataTypes.INTEGER, allowNull: false } // Mandatory
 });
 
 const Alert = sequelize.define('Alert', {
@@ -41,7 +41,7 @@ const Alert = sequelize.define('Alert', {
   message: { type: DataTypes.TEXT },
   status: { type: DataTypes.STRING, defaultValue: 'Active' }, // Active, Dismissed
   deviceId: { type: DataTypes.INTEGER },
-  userId: { type: DataTypes.INTEGER, allowNull: true } // Allow null temporarily
+  userId: { type: DataTypes.INTEGER, allowNull: false } // Mandatory
 });
 
 // Relationships
@@ -68,10 +68,10 @@ const initDb = async (retries = 5) => {
       console.log('Database models synchronized.');
 
       // Create default admin if no users exist
-      let admin = await User.findOne({ where: { username: 'admin' } });
-      if (!admin) {
+      const adminCount = await User.count({ where: { username: 'admin' } });
+      if (adminCount === 0) {
         const bcrypt = require('bcryptjs');
-        admin = await User.create({
+        await User.create({
           username: 'admin',
           passwordHash: bcrypt.hashSync('password', 10),
           role: 'Admin',
@@ -80,11 +80,6 @@ const initDb = async (retries = 5) => {
         });
         console.log('Default admin user created.');
       }
-
-      // Cleanup: Assign orphaned records to admin
-      await Device.update({ userId: admin.id }, { where: { userId: null } });
-      await ScanHistory.update({ userId: admin.id }, { where: { userId: null } });
-      await Alert.update({ userId: admin.id }, { where: { userId: null } });
       
       break; // Success, exit retry loop
     } catch (error) {
