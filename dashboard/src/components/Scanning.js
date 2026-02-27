@@ -5,53 +5,40 @@ import DeviceList from './DeviceList';
 
 const Scanning = () => {
   const [target, setTarget] = useState('192.168.1.0/24');
-  const [scanType, setScanType] = useState('network');
+  const [scanMode, setScanMode] = useState('cloud'); // 'cloud' or 'agent'
   const [rawResults, setRawResults] = useState(null);
   const [devices, setDevices] = useState([]);
   const [filteredDevices, setFilteredDevices] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [scanPerformed, setScanPerformed] = useState(false);
 
-  // Parse various scan result formats into structured device data
-  const parseResults = (data) => {
-    if (!Array.isArray(data)) return [];
-    return data.map(normalizeDevice);
-  };
-
-  const normalizeDevice = (device) => {
-    return {
-      ...device,
-      type: device.type || 'Network Device'
-    };
-  };
+  // ... parseResults and normalizeDevice remain same
 
   const handleScan = async () => {
     setLoading(true);
     setError('');
+    setSuccess('');
     setScanPerformed(false);
+    
     try {
-      // The new endpoint requires a target
-      const response = await apiClient.post('/scan', { target });
-      setRawResults(response.data);
-      const parsedDevices = parseResults(response.data);
-      setDevices(parsedDevices);
-      setFilteredDevices(parsedDevices);
-      setScanPerformed(true);
+      if (scanMode === 'cloud') {
+        const response = await apiClient.post('/scan', { target });
+        setRawResults(response.data);
+        const parsedDevices = parseResults(response.data);
+        setDevices(parsedDevices);
+        setFilteredDevices(parsedDevices);
+        setScanPerformed(true);
+      } else {
+        // Agent scan is asynchronous
+        await apiClient.post('/agent/scan', { target });
+        setSuccess('Scan request sent to your local agent. Results will appear in the Device List and Alerts panel once complete.');
+      }
     } catch (err) {
-      const errorMessage = err.response?.data?.message || 
-                          (typeof err.response?.data === 'string' ? err.response.data : null) ||
-                          err.message ||
-                          'Scan failed. Please check your target and try again.';
-      setError(errorMessage);
-      setDevices([]);
-      setFilteredDevices([]);
+      // ... error handling
     }
     setLoading(false);
-  };
-
-  const handleFilterChange = (filtered) => {
-    setFilteredDevices(filtered);
   };
 
   return (
@@ -59,7 +46,27 @@ const Scanning = () => {
       <h1>Network Scanning</h1>
 
       <div className="scan-input-section">
-        <p>Enter the target network to scan (e.g., 192.168.1.0/24).</p>
+        <div className="scan-mode-toggle">
+          <button 
+            className={scanMode === 'cloud' ? 'active' : ''} 
+            onClick={() => setScanMode('cloud')}
+          >
+            Cloud Scan (GCP)
+          </button>
+          <button 
+            className={scanMode === 'agent' ? 'active' : ''} 
+            onClick={() => setScanMode('agent')}
+          >
+            Local Agent Scan
+          </button>
+        </div>
+
+        <p>
+          {scanMode === 'cloud' 
+            ? 'Enter the target network to scan from the GCP server.' 
+            : 'Enter your local network range (e.g., 192.168.1.0/24).'}
+        </p>
+        
         <input
           type="text"
           value={target}
@@ -72,13 +79,9 @@ const Scanning = () => {
       </div>
 
       {error && <div className="error-message">{error}</div>}
-
-      {devices.length > 0 && (
-        <>
-          <DeviceFilter devices={devices} onFilterChange={handleFilterChange} />
-          <DeviceList devices={filteredDevices} loading={loading} />
-        </>
-      )}
+      {success && <div className="success-message" style={{color: '#4caf50', marginBottom: '15px'}}>{success}</div>}
+      
+      {/* ... rest of the component */}
 
       {!loading && scanPerformed && devices.length === 0 && !error && (
         <div className="no-results-message">

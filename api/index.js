@@ -363,19 +363,21 @@ app.get('/devices/:id/history', rbac, async (req, res) => {
 });
 
 
-// Store latest agent metrics in memory (or you could add a DB model for this)
+// Store latest agent metrics and pending scan requests
 let agentMetrics = {};
+let pendingAgentScans = {};
 
 app.post('/agent/report', rbac, async (req, res) => {
   const { metrics, scanResults, target } = req.body;
   const userId = req.user.id;
 
   try {
-    // 1. Store the metrics for the dashboard to display
-    agentMetrics[userId] = {
-      ...metrics,
-      timestamp: new Date().toISOString()
-    };
+    if (metrics) {
+      agentMetrics[userId] = {
+        ...metrics,
+        timestamp: new Date().toISOString()
+      };
+    }
 
     // 2. If scan results were included, save them to the DB
     if (scanResults && Array.isArray(scanResults)) {
@@ -407,11 +409,27 @@ app.post('/agent/report', rbac, async (req, res) => {
       }
     }
 
-    res.json({ message: 'Report received successfully' });
+    // 3. Check for pending scans for this user
+    const pendingScan = pendingAgentScans[userId];
+    delete pendingAgentScans[userId]; // Clear it after sending
+
+    res.json({ 
+      message: 'Report received successfully',
+      pendingScan: pendingScan || null
+    });
   } catch (err) {
     console.error('Agent report error:', err);
     res.status(500).send('Error processing agent report');
   }
+});
+
+// Endpoint for Dashboard to trigger an agent scan
+app.post('/agent/scan', rbac, (req, res) => {
+  const { target } = req.body;
+  if (!target) return res.status(400).send('Target is required');
+  
+  pendingAgentScans[req.user.id] = target;
+  res.json({ message: 'Scan request queued for agent' });
 });
 
 app.get('/metrics/agent', rbac, (req, res) => {
