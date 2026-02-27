@@ -35,7 +35,31 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
-// Agent Report Endpoint - Place ABOVE rate limiters to avoid blocking local agent
+// JWT authentication middleware
+app.use((req, res, next) => {
+  if (req.path === '/login' || req.path === '/register') { // Allow /register without token
+    return next();
+  }
+
+  const authHeader = req.headers.authorization;
+  if (authHeader) {
+    const token = authHeader.split(' ')[1];
+    jwt.verify(token, JWT_SECRET, (err, user) => {
+      if (err) {
+        return res.sendStatus(403); // Forbidden
+      }
+      req.user = user;
+      next();
+    });
+  } else {
+    res.sendStatus(401); // Unauthorized
+  }
+});
+
+// Audit logger middleware
+app.use(auditMiddleware);
+
+// Agent Report Endpoint
 app.post('/agent/report', rbac, async (req, res) => {
   if (!req.body || Object.keys(req.body).length === 0) {
     return res.status(400).send('Request body is required and must not be empty');
@@ -93,61 +117,8 @@ app.post('/agent/report', rbac, async (req, res) => {
   }
 });
 
-// JWT authentication middleware
-app.use((req, res, next) => {
-  if (req.path === '/login' || req.path === '/register') { // Allow /register without token
-    return next();
-  }
-
-  const authHeader = req.headers.authorization;
-  if (authHeader) {
-    const token = authHeader.split(' ')[1];
-    jwt.verify(token, JWT_SECRET, (err, user) => {
-      if (err) {
-        return res.sendStatus(403); // Forbidden
-      }
-      req.user = user;
-      next();
-    });
-  } else {
-    res.sendStatus(401); // Unauthorized
-  }
-});
-
-// Audit logger middleware
-app.use(auditMiddleware);
-
-// Agent Report Endpoint
-app.post('/agent/report', rbac, async (req, res) => {
-  const { metrics, scanResults, target } = req.body;
-  const userId = req.user.id;
-
-  try {
-    if (metrics) {
-      agentMetrics[userId] = {
-        ...metrics,
-        timestamp: new Date().toISOString()
-      };
-    }
-
-    if (scanResults && Array.isArray(scanResults)) {
-      await ScanHistory.create({ 
-        target: target || 'Local Agent Scan', 
-        deviceCount: scanResults.length, 
-        rawResults: scanResults,
-        userId: userId
-      });
-
-      for (const dev of scanResults) {
-        const deviceIdentifier = (dev.mac && dev.mac !== 'Unknown') ? { mac: dev.mac, userId } : { ip: dev.ip, userId };
-        const [device, created] = await Device.findOrCreate({
-          where: deviceIdentifier,
-          defaults: { ...dev, lastSeen: new Date(), userId }
-        });
-
-        if (created) {
-          await Alert.create({
-            severity: 'Medium',
+// Registration endpoint
+app.post('/register', async (req, res) => {
             message: `[Agent] New device: ${dev.ip}`,
             deviceId: device.id,
             userId
