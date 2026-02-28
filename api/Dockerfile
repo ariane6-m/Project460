@@ -12,7 +12,7 @@ RUN npm install --omit=dev
 
 # Switch to root to install nmap
 USER root
-RUN apt-get update && apt-get install -y nmap && rm -rf /var/lib/apt/lists/*
+RUN apk add --no-cache nmap
 
 # Copy application source
 COPY . .
