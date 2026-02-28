@@ -1,5 +1,5 @@
 # Build stage
-FROM node:24.14.0-trixie-slim AS builder
+FROM node:24.14.0-alpine3.23 AS builder
 
 WORKDIR /app
 
@@ -20,7 +20,7 @@ ENV REACT_APP_API_URL=$REACT_APP_API_URL
 RUN npm run build
 
 # Production stage
-FROM node:24.14.0-trixie-slim
+FROM node:24.14.0-alpine3.23
 
 WORKDIR /app
 
