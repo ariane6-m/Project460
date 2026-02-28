@@ -35,6 +35,17 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
+// Rate limiter for authenticated routes (protects JWT verification and subsequent processing)
+const authRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // limit each IP to 100 requests per windowMs
+  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+  legacyHeaders: false // Disable the `X-RateLimit-*` headers
+});
+
+// Apply rate limiter before JWT authentication middleware
+app.use(authRateLimiter);
+
 // JWT authentication middleware
 app.use((req, res, next) => {
   // Allow public access to certain endpoints (login, register, and Prometheus metrics)
