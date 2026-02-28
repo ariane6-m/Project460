@@ -27,6 +27,12 @@ const Device = sequelize.define('Device', {
   lastSeen: { type: DataTypes.DATE },
   status: { type: DataTypes.STRING },
   userId: { type: DataTypes.INTEGER, allowNull: false } // Mandatory
+}, {
+  indexes: [
+    { fields: ['userId'] },
+    { fields: ['ip'] },
+    { fields: ['mac'] }
+  ]
 });
 
 const ScanHistory = sequelize.define('ScanHistory', {
@@ -34,6 +40,10 @@ const ScanHistory = sequelize.define('ScanHistory', {
   deviceCount: { type: DataTypes.INTEGER },
   rawResults: { type: DataTypes.JSONB },
   userId: { type: DataTypes.INTEGER, allowNull: false } // Mandatory
+}, {
+  indexes: [
+    { fields: ['userId'] }
+  ]
 });
 
 const Alert = sequelize.define('Alert', {
@@ -42,6 +52,10 @@ const Alert = sequelize.define('Alert', {
   status: { type: DataTypes.STRING, defaultValue: 'Active' }, // Active, Dismissed
   deviceId: { type: DataTypes.INTEGER },
   userId: { type: DataTypes.INTEGER, allowNull: false } // Mandatory
+}, {
+  indexes: [
+    { fields: ['userId'] }
+  ]
 });
 
 // Relationships

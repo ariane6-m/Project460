@@ -1,3 +1,4 @@
+import os
 import requests
 import psutil
 import platform
@@ -7,9 +8,9 @@ import subprocess
 import json
 
 # --- CONFIGURATION ---
-API_URL = "http://34.133.36.174:8080" # Your Cloud IP
-USERNAME = "admin"
-PASSWORD = "password"
+API_URL = os.getenv("API_URL", "http://34.133.36.174:8080")
+USERNAME = os.getenv("AGENT_USERNAME", "admin")
+PASSWORD = os.getenv("AGENT_PASSWORD", "password")
 REPORT_INTERVAL = 10 # Seconds
 
 class MotoAgent:

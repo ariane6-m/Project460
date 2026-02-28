@@ -18,7 +18,7 @@ const { User, Device, ScanHistory, Alert, initDb, sequelize } = require('./src/m
 const app = express();
 const port = 8080;
 
-const JWT_SECRET = 'your-secret-key'; // In a real app, use an environment variable
+const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key'; // In a real app, use an environment variable
 
 // Initialize Database
 initDb();
@@ -37,7 +37,8 @@ app.use(cors({
 
 // JWT authentication middleware
 app.use((req, res, next) => {
-  if (req.path === '/login' || req.path === '/register') { // Allow /register without token
+  // Allow public access to certain endpoints (login, register, and Prometheus metrics)
+  if (req.path === '/login' || req.path === '/register' || req.path.startsWith('/metrics')) {
     return next();
   }
 
