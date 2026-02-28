@@ -1,5 +1,5 @@
 # Use specific Node.js version on Debian for smaller image
-FROM node:22.22.0-trixie-slim
+FROM node:22.22.0-alpine3.23
 
 # Set the working directory
 WORKDIR /usr/src/app
