@@ -511,11 +511,12 @@ app.post('/agent/scan', rbac, (req, res) => {
 
 app.get('/metrics/json', rbac, async (req, res) => {
   try {
-    const [cpu, mem, network, netConns] = await Promise.all([
+    const [cpu, mem, network, netConns, fsSize] = await Promise.all([
       si.currentLoad(),
       si.mem(),
       si.networkStats(),
-      si.networkConnections()
+      si.networkConnections(),
+      si.fsSize()
     ]);
 
     // Calculate free memory including buffers/cache for more "real" feel
@@ -523,11 +524,17 @@ app.get('/metrics/json', rbac, async (req, res) => {
     const totalMemMB = mem.total / (1024 * 1024);
     const freeMemMB = mem.available / (1024 * 1024);
 
+    // Get disk usage of the root partition
+    const rootFs = fsSize.find(fs => fs.mount === '/') || fsSize[0];
+
     res.json({
       timestamp: new Date().toISOString(),
       cpuUsage: cpu.currentLoad / 100,
       freeMemory: freeMemMB,
       totalMemory: totalMemMB,
+      diskTotal: rootFs ? rootFs.size / (1024 * 1024 * 1024) : 0,
+      diskUsed: rootFs ? rootFs.used / (1024 * 1024 * 1024) : 0,
+      diskFree: rootFs ? (rootFs.size - rootFs.used) / (1024 * 1024 * 1024) : 0,
       networkStats: {
         packetsReceived: network[0]?.rx_sec || 0,
         packetsSent: network[0]?.tx_sec || 0,

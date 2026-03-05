@@ -38,6 +38,7 @@ class MotoAgent:
     def get_system_metrics(self):
         try:
             mem = psutil.virtual_memory()
+            disk = psutil.disk_usage('/')
             cpu_usage = psutil.cpu_percent(interval=1) / 100.0
             
             return {
@@ -45,6 +46,9 @@ class MotoAgent:
                 "freeMemory": mem.available / (1024 * 1024),
                 "totalMemory": mem.total / (1024 * 1024),
                 "usedMemory": mem.used / (1024 * 1024),
+                "diskTotal": disk.total / (1024 * 1024 * 1024),
+                "diskUsed": disk.used / (1024 * 1024 * 1024),
+                "diskFree": disk.free / (1024 * 1024 * 1024),
                 "hostname": socket.gethostname(),
                 "platform": platform.system(),
                 "isAgent": True

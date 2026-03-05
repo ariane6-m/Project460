@@ -71,6 +71,14 @@ const Metrics = () => {
               <p>Available: {metrics.freeMemory > 1024 ? (metrics.freeMemory/1024).toFixed(2) + ' GB' : metrics.freeMemory.toFixed(0) + ' MB'}</p>
               <p>Total: {metrics.totalMemory > 1024 ? (metrics.totalMemory/1024).toFixed(2) + ' GB' : metrics.totalMemory.toFixed(0) + ' MB'}</p>
             </div>
+            {metrics.diskTotal && (
+              <div className="metric-card">
+                <h3>Disk Storage</h3>
+                <p>Used: {metrics.diskUsed.toFixed(2)} GB</p>
+                <p>Free: {metrics.diskFree.toFixed(2)} GB</p>
+                <p>Total: {metrics.diskTotal.toFixed(2)} GB</p>
+              </div>
+            )}
           </div>
         </>
       )}
