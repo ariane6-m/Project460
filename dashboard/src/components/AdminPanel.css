@@ -78,3 +78,24 @@
   background-color: #e9ecef;
   cursor: not-allowed;
 }
+
+.audit-logs-container {
+    max-height: 400px;
+    overflow-y: auto;
+    margin-top: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+.audit-logs-container .user-table {
+    margin-top: 0;
+    border: none;
+}
+
+.audit-logs-container thead th {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    background-color: #f2f2f2;
+}
+

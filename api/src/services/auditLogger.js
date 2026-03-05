@@ -77,7 +77,8 @@ function auditMiddleware(req, res, next) {
 
     const event = {
       timestamp: new Date().toISOString(),
-      user: req.user ? req.user.id : 'anonymous',
+      user: req.user ? req.user.username : 'anonymous',
+      userId: req.user ? req.user.id : null,
       action: `${req.method} ${req.originalUrl}`,
       method: req.method,
       url: req.originalUrl,

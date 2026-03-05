@@ -5,6 +5,7 @@ import { jwtDecode } from 'jwt-decode';
 
 const AdminPanel = () => {
   const [users, setUsers] = useState([]);
+  const [auditLogs, setAuditLogs] = useState([]);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const [currentUserRole, setCurrentUserRole] = useState(null);
@@ -20,6 +21,10 @@ const AdminPanel = () => {
       }
     }
     fetchUsers();
+    fetchAuditLogs();
+    
+    const interval = setInterval(fetchAuditLogs, 10000); // Refresh logs every 10 seconds
+    return () => clearInterval(interval);
   }, []);
 
   const fetchUsers = async () => {
@@ -29,6 +34,15 @@ const AdminPanel = () => {
     } catch (err) {
       setError('Failed to fetch users.');
       console.error(err);
+    }
+  };
+
+  const fetchAuditLogs = async () => {
+    try {
+      const response = await apiClient.get('/events');
+      setAuditLogs(response.data);
+    } catch (err) {
+      console.error('Failed to fetch audit logs:', err);
     }
   };
 
@@ -89,6 +103,44 @@ const AdminPanel = () => {
           ))}
         </tbody>
       </table>
+
+      <h3>Audit Logs (Recent Activity)</h3>
+      <div className="audit-logs-container">
+        <table className="user-table">
+          <thead>
+            <tr>
+              <th>Timestamp</th>
+              <th>User</th>
+              <th>Action</th>
+              <th>Status</th>
+              <th>IP Address</th>
+            </tr>
+          </thead>
+          <tbody>
+            {auditLogs.length === 0 ? (
+              <tr>
+                <td colSpan="5" style={{ textAlign: 'center' }}>No audit logs available.</td>
+              </tr>
+            ) : (
+              auditLogs.map((log, index) => (
+                <tr key={`${log.timestamp}-${index}`}>
+                  <td>{new Date(log.timestamp).toLocaleString()}</td>
+                  <td>{log.user}</td>
+                  <td>{log.action}</td>
+                  <td style={{ 
+                    color: log.responseStatus >= 400 ? '#dc3545' : 
+                           log.responseStatus >= 300 ? '#ffc107' : '#28a745',
+                    fontWeight: 'bold'
+                  }}>
+                    {log.responseStatus}
+                  </td>
+                  <td>{log.ip}</td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 };
