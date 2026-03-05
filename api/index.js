@@ -36,6 +36,13 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
+// Rate limiting middleware to protect authorization and heavy routes
+const authRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // limit each IP to 100 requests per windowMs
+});
+app.use(authRateLimiter);
+
 // JWT authentication middleware
 app.use((req, res, next) => {
   // Allow public access to login, register, forgot-password, reset-password and the base /metrics endpoint (for Prometheus)
