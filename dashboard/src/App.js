@@ -11,6 +11,8 @@ import Devices from './components/Devices';
 import Alerts from './components/Alerts';
 import Timeline from './components/Timeline';
 import LoginPage from './components/LoginPage';
+import ForgotPassword from './components/ForgotPassword';
+import ResetPassword from './components/ResetPassword';
 import ProtectedRoute from './components/ProtectedRoute';
 import AdminPanel from './components/AdminPanel'; // Import AdminPanel
 import apiClient from './api';
@@ -152,6 +154,8 @@ function App() {
     <Router>
       <Routes>
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password/:token" element={<ResetPassword />} />
         <Route
           path="/*"
           element={

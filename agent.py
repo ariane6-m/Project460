@@ -44,6 +44,7 @@ class MotoAgent:
                 "cpuUsage": cpu_usage,
                 "freeMemory": mem.available / (1024 * 1024),
                 "totalMemory": mem.total / (1024 * 1024),
+                "usedMemory": mem.used / (1024 * 1024),
                 "hostname": socket.gethostname(),
                 "platform": platform.system(),
                 "isAgent": True

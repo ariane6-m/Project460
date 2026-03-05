@@ -67,6 +67,61 @@ button[type="submit"]:hover {
     text-decoration: underline;
 }
 
+.forgot-password-link {
+    text-align: right;
+    margin-bottom: 1.5rem;
+    font-size: 0.9rem;
+}
+
+.forgot-password-link a {
+    color: #007bff;
+    text-decoration: none;
+}
+
+.forgot-password-link a:hover {
+    text-decoration: underline;
+}
+
+.success-message {
+    color: #28a745;
+    background: #d4edda;
+    padding: 0.75rem;
+    border-radius: 4px;
+    margin-top: 1rem;
+    font-size: 0.9rem;
+    text-align: center;
+}
+
+.login-card {
+    padding: 2.5rem;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    width: 100%;
+    max-width: 450px;
+}
+
+.login-card h2 {
+    text-align: center;
+    margin-bottom: 1.5rem;
+}
+
+.login-footer {
+    margin-top: 1.5rem;
+    text-align: center;
+    font-size: 0.9rem;
+}
+
+.login-footer a {
+    color: #666;
+    text-decoration: none;
+}
+
+.login-footer a:hover {
+    color: #007bff;
+    text-decoration: underline;
+}
+
 .error-message {
     color: red;
     text-align: center;

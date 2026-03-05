@@ -65,6 +65,9 @@ const Metrics = () => {
             </div>
             <div className="metric-card">
               <h3>Memory Usage</h3>
+              {metrics.usedMemory && (
+                <p>Used: {metrics.usedMemory > 1024 ? (metrics.usedMemory/1024).toFixed(2) + ' GB' : metrics.usedMemory.toFixed(0) + ' MB'}</p>
+              )}
               <p>Available: {metrics.freeMemory > 1024 ? (metrics.freeMemory/1024).toFixed(2) + ' GB' : metrics.freeMemory.toFixed(0) + ' MB'}</p>
               <p>Total: {metrics.totalMemory > 1024 ? (metrics.totalMemory/1024).toFixed(2) + ' GB' : metrics.totalMemory.toFixed(0) + ' MB'}</p>
             </div>

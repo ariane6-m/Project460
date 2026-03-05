@@ -1,11 +1,12 @@
 function rbac(req, res, next) {
-  // Allow all users (including unauthenticated) to access metrics
-  if (req.path === '/metrics' || req.path === '/metrics/json') {
+  // Allow unauthenticated access ONLY to the base /metrics endpoint (for Prometheus scraping)
+  if (req.path === '/metrics') {
     return next();
   }
 
+  // All other metrics (/metrics/json, /metrics/agent) and routes require an authenticated user
   if (!req.user || !req.user.role) {
-    return res.status(403).send('Forbidden: User role not available.');
+    return res.status(401).send('Unauthorized: User authentication required.');
   }
 
   const { role } = req.user;

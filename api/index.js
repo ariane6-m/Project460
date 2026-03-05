@@ -13,6 +13,7 @@ const xml2js = require('xml2js');
 const rateLimit = require('express-rate-limit');
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 const { User, Device, ScanHistory, Alert, initDb, sequelize } = require('./src/models');
 
 const app = express();
@@ -37,8 +38,8 @@ app.use(cors({
 
 // JWT authentication middleware
 app.use((req, res, next) => {
-  // Allow public access to certain endpoints (login, register, and Prometheus metrics)
-  if (req.path === '/login' || req.path === '/register' || req.path.startsWith('/metrics')) {
+  // Allow public access to login, register, forgot-password, reset-password and the base /metrics endpoint (for Prometheus)
+  if (req.path === '/login' || req.path === '/register' || req.path === '/forgot-password' || req.path === '/reset-password' || req.path === '/metrics') {
     return next();
   }
 
@@ -155,6 +156,61 @@ app.post('/register', async (req, res) => {
     } catch (err) {
         console.error('Registration error:', err);
         res.status(500).send('Error registering user.');
+    }
+});
+
+app.post('/forgot-password', async (req, res) => {
+    const { email } = req.body;
+    if (!email) return res.status(400).send('Email is required');
+
+    try {
+        const user = await User.findOne({ where: { email } });
+        if (!user) {
+            // For security reasons, don't reveal if a user exists
+            return res.json({ message: 'If an account with that email exists, a reset link has been generated.' });
+        }
+
+        const token = crypto.randomBytes(20).toString('hex');
+        user.resetPasswordToken = token;
+        user.resetPasswordExpires = Date.now() + 3600000; // 1 hour
+        await user.save();
+
+        // In a real app, send an email. For now, we'll log it to the console.
+        console.log(`[PASSWORD RESET] Token for ${email}: ${token}`);
+        console.log(`[PASSWORD RESET] Link: http://localhost:3000/reset-password/${token}`);
+
+        res.json({ message: 'If an account with that email exists, a reset link has been generated.' });
+    } catch (err) {
+        console.error('Forgot password error:', err);
+        res.status(500).send('Error processing forgot password request');
+    }
+});
+
+app.post('/reset-password', async (req, res) => {
+    const { token, newPassword } = req.body;
+    if (!token || !newPassword) return res.status(400).send('Token and new password are required');
+
+    try {
+        const user = await User.findOne({ 
+            where: { 
+                resetPasswordToken: token,
+                resetPasswordExpires: { [sequelize.Sequelize.Op.gt]: new Date() }
+            } 
+        });
+
+        if (!user) {
+            return res.status(400).send('Password reset token is invalid or has expired.');
+        }
+
+        user.passwordHash = await bcrypt.hash(newPassword, 10);
+        user.resetPasswordToken = null;
+        user.resetPasswordExpires = null;
+        await user.save();
+
+        res.json({ message: 'Password has been reset successfully.' });
+    } catch (err) {
+        console.error('Reset password error:', err);
+        res.status(500).send('Error resetting password');
     }
 });
 
@@ -372,7 +428,16 @@ app.get('/alerts', rbac, async (req, res) => {
 });
 
 app.get('/events', rbac, (req, res) => {
-  res.json(getEvents());
+  const allEvents = getEvents();
+  
+  // If user is Admin, they see everything. 
+  // If user is not Admin, they only see events where the userId matches their own.
+  if (req.user && req.user.role === 'Admin') {
+    return res.json(allEvents);
+  }
+  
+  const filteredEvents = allEvents.filter(event => event.userId === req.user.id);
+  res.json(filteredEvents);
 });
 
 app.get('/devices/:id/history', rbac, async (req, res) => {

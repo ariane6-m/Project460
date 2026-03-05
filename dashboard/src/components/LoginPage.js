@@ -99,6 +99,11 @@ const LoginPage = () => {
                         required
                     />
                 </div>
+                {!isRegistering && (
+                    <div className="forgot-password-link">
+                        <a href="/forgot-password">Forgot Password?</a>
+                    </div>
+                )}
                 <button type="submit">{isRegistering ? 'Register' : 'Login'}</button>
                 <button
                     type="button"

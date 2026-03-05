@@ -16,7 +16,9 @@ const User = sequelize.define('User', {
   passwordHash: { type: DataTypes.STRING, allowNull: false },
   role: { type: DataTypes.STRING, defaultValue: 'Viewer' },
   fullName: { type: DataTypes.STRING },
-  email: { type: DataTypes.STRING, unique: true }
+  email: { type: DataTypes.STRING, unique: true },
+  resetPasswordToken: { type: DataTypes.STRING },
+  resetPasswordExpires: { type: DataTypes.DATE }
 });
 
 const Device = sequelize.define('Device', {
