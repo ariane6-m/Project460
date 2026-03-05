@@ -7,8 +7,7 @@ WORKDIR /app
 COPY package*.json ./
 
 # Install all dependencies (including dev dependencies for build)
-RUN --mount=type=cache,target=/root/.npm \
-    npm install
+RUN npm install
 
 # Copy application source
 COPY . .
@@ -25,8 +24,7 @@ FROM node:24.14.0-alpine3.23
 WORKDIR /app
 
 # Install serve to host the static files
-RUN --mount=type=cache,target=/root/.npm \
-    npm install -g serve
+RUN npm install -g serve
 
 # Copy built assets from builder stage
 COPY --from=builder /app/build ./build
