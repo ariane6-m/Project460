@@ -38,7 +38,9 @@ class MotoAgent:
     def get_system_metrics(self):
         try:
             mem = psutil.virtual_memory()
-            disk = psutil.disk_usage('/')
+            # On Windows, monitor the C: drive. On others, use /
+            disk_path = "C:\\" if platform.system() == "Windows" else "/"
+            disk = psutil.disk_usage(disk_path)
             cpu_usage = psutil.cpu_percent(interval=1) / 100.0
             
             return {
