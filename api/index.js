@@ -21,6 +21,12 @@ const port = 8080;
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key'; // In a real app, use an environment variable
 
+// Define allowed origins for CORS
+const allowedOrigins = [
+  'http://localhost:3000',
+  'http://127.0.0.1:3000'
+];
+
 // Initialize Database
 initDb();
 
@@ -31,7 +37,13 @@ let pendingAgentScans = {};
 // Middleware to parse JSON bodies
 app.use(bodyParser.json());
 app.use(cors({
-  origin: '*',
+  origin: function (origin, callback) {
+    // Allow requests with no origin (e.g., mobile apps, curl) or from whitelisted origins
+    if (!origin || allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    return callback(new Error('Not allowed by CORS'));
+  },
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
