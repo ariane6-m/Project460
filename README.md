@@ -5,9 +5,10 @@ A comprehensive network monitoring system with a web dashboard, backend API, and
 
 ## Features
 *   **User Authentication**: Secure registration and JWT-based login with role-based access control (RBAC).
+*   **Forgot Password**: Secure password reset flow using time-limited tokens.
 *   **Database Persistence**: PostgreSQL backend stores users, discovered devices, scan history, and alerts.
 *   **Network Scanning**: Robust Nmap-powered scanning with support for both server-side and agent-side reports.
-*   **Real-time Metrics**: Live system stats (CPU, Memory, Network) from the server and connected agents.
+*   **Real-time Metrics**: Live system stats (CPU, RAM, Disk Storage) from the server and connected agents.
 *   **Prometheus Monitoring**: Integrated metrics collection with `prom-client` and a dedicated `/metrics` endpoint for performance tracking.
 *   **Device History**: Interactive charts showing device availability and port count history.
 *   **Automatic Alerts**: Real-time alert generation when new or unauthorized devices are detected.
@@ -132,7 +133,9 @@ The application is optimized for deployment on a GCP Compute Engine VM (Ubuntu).
 ---
 
 ## Security & Monitoring
-*   **JWT Authentication**: All API requests (except login/register) require a valid JWT.
+*   **JWT Authentication**: All API requests (except login/register/reset-password) require a valid JWT.
+*   **Password Security**: Hashing via `bcryptjs` and secure password reset flow using unique, expiring tokens.
+*   **Privacy**: Audit logs and timeline events are filtered based on user roles (Admins see all; Viewers see only their own).
 *   **Audit Logging**: Every administrative action (who, what, when, IP) is logged for security auditing and visible in the Admin Panel.
 *   **Prometheus Metrics**: Tracks traffic (requests total) and system health (CPU, Memory, Event Loop) every 15 seconds.
 *   **Security Scanning**: Integrated Snyk and CodeQL scanning in the CI/CD pipeline to identify vulnerabilities.
