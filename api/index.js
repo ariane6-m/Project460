@@ -14,12 +14,23 @@ const rateLimit = require('express-rate-limit');
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const nodemailer = require('nodemailer');
 const { User, Device, ScanHistory, Alert, initDb, sequelize } = require('./src/models');
 
 const app = express();
 const port = 8080;
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key'; // In a real app, use an environment variable
+
+// SMTP Configuration
+const transporter = nodemailer.createTransport({
+    host: process.env.SMTP_HOST || 'smtp.ethereal.email',
+    port: process.env.SMTP_PORT || 587,
+    auth: {
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS
+    }
+});
 
 // Define allowed origins for CORS
 const allowedOrigins = [
@@ -42,12 +53,18 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
-// Rate limiting middleware to protect authorization and heavy routes
+// Rate limiting middleware to protect authorization routes
 const authRateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit each IP to 100 requests per windowMs
+  max: 500, // Increased limit
+  message: 'Too many requests from this IP, please try again after 15 minutes'
 });
-app.use(authRateLimiter);
+
+// Apply rate limiter specifically to auth routes
+app.use('/login', authRateLimiter);
+app.use('/register', authRateLimiter);
+app.use('/forgot-password', authRateLimiter);
+app.use('/reset-password', authRateLimiter);
 
 // JWT authentication middleware
 app.use((req, res, next) => {
@@ -180,7 +197,7 @@ app.post('/forgot-password', async (req, res) => {
         const user = await User.findOne({ where: { email } });
         if (!user) {
             // For security reasons, don't reveal if a user exists
-            return res.json({ message: 'If an account with that email exists, a reset link has been generated.' });
+            return res.json({ message: 'If an account with that email exists, a reset link has been sent.' });
         }
 
         const token = crypto.randomBytes(20).toString('hex');
@@ -188,11 +205,22 @@ app.post('/forgot-password', async (req, res) => {
         user.resetPasswordExpires = Date.now() + 3600000; // 1 hour
         await user.save();
 
-        // In a real app, send an email. For now, we'll log it to the console.
-        console.log(`[PASSWORD RESET] Token for ${email}: ${token}`);
-        console.log(`[PASSWORD RESET] Link: http://localhost:3000/reset-password/${token}`);
+        const resetLink = `http://localhost:3000/reset-password/${token}`;
 
-        res.json({ message: 'If an account with that email exists, a reset link has been generated.' });
+        const mailOptions = {
+            from: process.env.SMTP_USER || 'no-reply@moto-moto.local',
+            to: email,
+            subject: 'Project460 - Password Reset Request',
+            text: `You are receiving this because you (or someone else) have requested the reset of the password for your account.\n\n` +
+                  `Please click on the following link, or paste this into your browser to complete the process within one hour of receiving it:\n\n` +
+                  `${resetLink}\n\n` +
+                  `If you did not request this, please ignore this email and your password will remain unchanged.\n`
+        };
+
+        await transporter.sendMail(mailOptions);
+        console.log(`[PASSWORD RESET] Email sent to ${email}`);
+
+        res.json({ message: 'If an account with that email exists, a reset link has been sent.' });
     } catch (err) {
         console.error('Forgot password error:', err);
         res.status(500).send('Error processing forgot password request');

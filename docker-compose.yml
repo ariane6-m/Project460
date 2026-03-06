@@ -19,6 +19,11 @@ services:
       DB_USER: moto_user
       DB_PASSWORD: moto_password
       DB_NAME: motomoto
+      JWT_SECRET: your-secret-key
+      SMTP_HOST: smtp.gmail.com
+      SMTP_PORT: 587
+      SMTP_USER: angiekulenduka5@gmail.com
+      SMTP_PASS: your-app-password
     volumes:
       - ./api:/usr/src/app
       - /usr/src/app/node_modules

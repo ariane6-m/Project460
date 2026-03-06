@@ -92,7 +92,7 @@ const initDb = async (retries = 5) => {
           passwordHash: bcrypt.hashSync('password', 10),
           role: 'Admin',
           fullName: 'System Administrator',
-          email: 'admin@moto-moto.local'
+          email: 'angiekulenduka5@gmail.com'
         });
         console.log('Default admin user created.');
       }
