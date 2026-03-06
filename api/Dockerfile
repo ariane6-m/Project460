@@ -23,9 +23,6 @@ RUN npm install --omit=dev
 # Ensure the node user owns the app directory
 RUN chown -R node:node /usr/src/app
 
-# Persistent volume for user data
-VOLUME /usr/src/app
-
 # Run as non-root user for security
 USER node
 
